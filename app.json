@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Images Manager",
+    "slug": "images-manager",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2563eb"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "experiments": {
+      "baseUrl": "/ImagesManager_Mobile"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.lemondedechristine.imagesmanager"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2563eb"
+      },
+      "package": "com.lemondedechristine.imagesmanager",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Autorisez Images Manager à accéder à vos photos.",
+          "cameraPermission": "Autorisez Images Manager à utiliser l'appareil photo."
+        }
+      ]
+    ]
+  }
+}
