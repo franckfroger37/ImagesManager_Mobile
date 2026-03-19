@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ScrollView, Image, Alert, ActivityIndicator, SafeAreaView, Modal,
+  ScrollView, Image, ActivityIndicator, SafeAreaView, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getSettings, CATEGORIES } from '../services/storageService';
@@ -16,9 +16,11 @@ export default function PublishScreen({ route, navigation }) {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
+  const [progressType, setProgressType] = useState('info'); // 'info' | 'error' | 'success'
   const [settings, setSettings] = useState(null);
-  const [processedSize, setProcessedSize] = useState(null);
   const [refName] = useState(() => generateRefName(fileName));
+  const [done, setDone] = useState(false);
+  const [doneProductId, setDoneProductId] = useState(null);
 
   useEffect(() => {
     getSettings().then((s) => {
@@ -28,27 +30,28 @@ export default function PublishScreen({ route, navigation }) {
     });
   }, []);
 
+  const settingsOk = settings?.wooUrl && settings?.consumerKey && settings?.consumerSecret;
+
+  const setMsg = (msg, type = 'info') => {
+    setProgressMsg(msg);
+    setProgressType(type);
+  };
+
   const handlePublish = async () => {
+    // Validation in-screen (pas d'Alert.alert sur web)
     if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
-      Alert.alert('Prix manquant', 'Veuillez saisir un prix valide.');
+      setMsg('⚠️ Veuillez saisir un prix valide avant de publier.', 'error');
       return;
     }
-
-    if (!settings?.wooUrl || !settings?.consumerKey || !settings?.consumerSecret) {
-      Alert.alert(
-        'Paramètres manquants',
-        'Configurez vos identifiants WooCommerce dans les Paramètres.',
-        [
-          { text: 'Annuler', style: 'cancel' },
-          { text: 'Paramètres', onPress: () => navigation.navigate('Settings') },
-        ]
-      );
+    if (!settingsOk) {
+      setMsg('⚠️ Paramètres WooCommerce manquants — cliquez sur ⚙️ pour les configurer.', 'error');
       return;
     }
 
     setProcessing(true);
+    setDone(false);
     try {
-      setProgressMsg('⚙️ Traitement de l\'image...');
+      setMsg('⚙️ Traitement de l\'image en cours...', 'info');
       const processedUri = await processImage(uri, cropParams, {
         targetWidth: settings.targetWidth || 800,
         targetHeight: settings.targetHeight || 1200,
@@ -56,10 +59,9 @@ export default function PublishScreen({ route, navigation }) {
       });
 
       const sizKb = await getFileSize(processedUri);
-      setProcessedSize(sizKb);
-      setProgressMsg(`✅ Image traitée (${sizKb} Ko)`);
+      setMsg(`✅ Image traitée (${sizKb} Ko) — publication en cours...`, 'info');
 
-      await publishProduct({
+      const result = await publishProduct({
         processedImageUri: processedUri,
         refName,
         price: parseFloat(price),
@@ -67,21 +69,26 @@ export default function PublishScreen({ route, navigation }) {
         categorySlug: selectedCategory.value,
         categoryLabel: selectedCategory.label,
         settings,
-        onProgress: (msg) => setProgressMsg(msg),
+        onProgress: (msg) => setMsg(msg, 'info'),
       });
 
       setProcessing(false);
-      Alert.alert(
-        '✅ Publié !',
-        `Le produit ${refName} a été publié sur votre boutique.`,
-        [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
-      );
+      setDone(true);
+      setDoneProductId(result?.id);
+      setMsg(`✅ Produit "${refName}" publié avec succès !`, 'success');
     } catch (error) {
       setProcessing(false);
-      Alert.alert('Erreur', error.message || 'Une erreur est survenue.');
-      setProgressMsg('❌ ' + (error.message || 'Erreur'));
+      const msg = error.message || 'Une erreur est survenue.';
+      setMsg(`❌ Erreur : ${msg}`, 'error');
     }
   };
+
+  const progressColors = {
+    info:    { bg: '#f0fdf4', border: '#16a34a', text: '#15803d' },
+    error:   { bg: '#fff1f2', border: '#e11d48', text: '#be123c' },
+    success: { bg: '#f0fdf4', border: '#16a34a', text: '#15803d' },
+  };
+  const pc = progressColors[progressType] || progressColors.info;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -94,6 +101,17 @@ export default function PublishScreen({ route, navigation }) {
             <Text style={styles.refSub}>Photo originale</Text>
           </View>
         </View>
+
+        {/* Bannière avertissement si paramètres manquants */}
+        {settings && !settingsOk && (
+          <TouchableOpacity style={styles.warningBanner} onPress={() => navigation.navigate('Settings')}>
+            <Ionicons name="warning-outline" size={18} color="#92400e" />
+            <Text style={styles.warningText}>
+              Paramètres WooCommerce non configurés — Tapez ici pour les saisir
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#92400e" />
+          </TouchableOpacity>
+        )}
 
         <View style={styles.stepsBar}>
           {['Recadrage', 'Paramètres', 'Publication'].map((step, i) => (
@@ -137,25 +155,39 @@ export default function PublishScreen({ route, navigation }) {
           </View>
         </View>
 
+        {/* Zone de progression / erreurs — toujours visible si message */}
         {progressMsg ? (
-          <View style={styles.progressBox}>
-            <Text style={styles.progressText}>{progressMsg}</Text>
+          <View style={[styles.progressBox, { backgroundColor: pc.bg, borderLeftColor: pc.border }]}>
+            <Text style={[styles.progressText, { color: pc.text }]}>{progressMsg}</Text>
           </View>
         ) : null}
 
-        <TouchableOpacity
-          style={[styles.publishBtn, processing && styles.publishBtnDisabled]}
-          onPress={handlePublish}
-          disabled={processing}
-        >
-          {processing ? <ActivityIndicator color="#fff" /> : <Ionicons name="cloud-upload-outline" size={22} color="#fff" />}
-          <Text style={styles.publishBtnText}>{processing ? 'Traitement en cours...' : '🚀 Traiter & Publier'}</Text>
-        </TouchableOpacity>
+        {/* Bouton succès → retour accueil */}
+        {done ? (
+          <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.navigate('Home')}>
+            <Ionicons name="home-outline" size={22} color="#fff" />
+            <Text style={styles.publishBtnText}>Retour à l'accueil</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.publishBtn, (processing || !settingsOk) && styles.publishBtnDisabled]}
+            onPress={handlePublish}
+            disabled={processing}
+          >
+            {processing
+              ? <ActivityIndicator color="#fff" />
+              : <Ionicons name="cloud-upload-outline" size={22} color="#fff" />}
+            <Text style={styles.publishBtnText}>
+              {processing ? 'Traitement en cours...' : '🚀 Traiter & Publier'}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} disabled={processing}>
           <Ionicons name="crop-outline" size={18} color="#6b7280" />
           <Text style={styles.backBtnText}>Modifier le recadrage</Text>
         </TouchableOpacity>
+
       </ScrollView>
 
       <Modal visible={showCategoryPicker} transparent animationType="slide" onRequestClose={() => setShowCategoryPicker(false)}>
@@ -194,6 +226,8 @@ const styles = StyleSheet.create({
   previewInfo: { flex: 1, padding: 12, justifyContent: 'center' },
   refName: { fontSize: 16, fontWeight: '700', color: '#111827' },
   refSub: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  warningBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fbbf24', borderRadius: 10, padding: 12, marginBottom: 12 },
+  warningText: { flex: 1, fontSize: 13, color: '#92400e', fontWeight: '500' },
   stepsBar: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginBottom: 20 },
   stepItem: { alignItems: 'center', gap: 4 },
   stepDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' },
@@ -208,11 +242,12 @@ const styles = StyleSheet.create({
   categorySelectorText: { fontSize: 16, color: '#111827', fontWeight: '500' },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb' },
   infoText: { fontSize: 14, color: '#374151' },
-  progressBox: { backgroundColor: '#f0fdf4', borderLeftWidth: 3, borderLeftColor: '#16a34a', borderRadius: 8, padding: 12, marginBottom: 16 },
-  progressText: { fontSize: 13, color: '#15803d', fontFamily: 'monospace' },
+  progressBox: { borderLeftWidth: 3, borderRadius: 8, padding: 12, marginBottom: 16 },
+  progressText: { fontSize: 13, fontFamily: 'monospace' },
   publishBtn: { backgroundColor: '#16a34a', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, elevation: 3, shadowColor: '#16a34a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 },
   publishBtnDisabled: { backgroundColor: '#86efac', elevation: 0 },
   publishBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  doneBtn: { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   backBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, marginTop: 8 },
   backBtnText: { color: '#6b7280', fontSize: 14 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
