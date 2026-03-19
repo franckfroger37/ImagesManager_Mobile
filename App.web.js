@@ -1,64 +1,57 @@
 /**
- * App.web.js - Version web de l'application
- * Utilise React Navigation Web-compatible sans GestureHandlerRootView
- * qui ne fonctionne pas bien sur web avec react-native-screens.
+ * App.web.js - Version web MINIMALE pour diagnostic
+ * Pas de navigation native, juste React Native Web de base
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import { StatusBar } from 'expo-status-bar';
+import { View, Text, StyleSheet } from 'react-native';
 
-import HomeScreen from './screens/HomeScreen';
-import CropScreen from './screens/CropScreen';
-import PublishScreen from './screens/PublishScreen';
-import SettingsScreen from './screens/SettingsScreen';
-
-const Stack = createStackNavigator();
+console.log('[App.web.js] Module loaded!');
 
 export default function App() {
-  console.log('[App.web.js] Mounting web app...');
+  console.log('[App.web.js] App rendering...');
   return (
-    <View style={styles.root}>
-      <StatusBar style="light" />
-      <NavigationContainer>
-        <Stack.Navigator
-          screenOptions={{
-            headerStyle: { backgroundColor: '#2563eb' },
-            headerTintColor: '#fff',
-            headerTitleStyle: { fontWeight: '700', fontSize: 18 },
-            headerBackTitleVisible: false,
-            cardStyle: { backgroundColor: '#f8fafc' },
-          }}
-        >
-          <Stack.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{ title: '📷 Images Manager', headerLeft: () => null }}
-          />
-          <Stack.Screen
-            name="Crop"
-            component={CropScreen}
-            options={{ title: '✂️ Recadrage', headerStyle: { backgroundColor: '#111827' } }}
-          />
-          <Stack.Screen
-            name="Publish"
-            component={PublishScreen}
-            options={{ title: '🚀 Publier le produit' }}
-          />
-          <Stack.Screen
-            name="Settings"
-            component={SettingsScreen}
-            options={{ title: '⚙️ Paramètres' }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>📷 Images Manager</Text>
+      </View>
+      <View style={styles.body}>
+        <Text style={styles.message}>Application web en cours de chargement...</Text>
+        <Text style={styles.sub}>Utilisez cette app depuis votre navigateur mobile.</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  container: {
     flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  header: {
+    backgroundColor: '#2563eb',
+    padding: 20,
+    alignItems: 'center',
+  },
+  title: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  body: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  message: {
+    fontSize: 18,
+    color: '#1e293b',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  sub: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
   },
 });
