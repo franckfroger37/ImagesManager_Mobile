@@ -1,16 +1,15 @@
 /**
  * index.web.js - Point d'entrée Web
- * Contrairement à expo/AppEntry.js qui ne démarre jamais l'app sur le web,
- * ce fichier appelle explicitement AppRegistry.runApplication().
+ * Sans expo/build/Expo.fx (qui importe expo-modules-core natif et casse le web)
+ * Appelle AppRegistry.runApplication() explicitement pour démarrer l'app.
  */
-import 'expo/build/Expo.fx';
 import { AppRegistry } from 'react-native';
 import App from './App';
 
 // Enregistrer le composant racine
 AppRegistry.registerComponent('main', () => App);
 
-// Démarrer l'app explicitement (ce que expo/AppEntry.js ne fait pas sur le web)
+// Démarrer l'app explicitement
 if (typeof document !== 'undefined') {
   const rootTag = document.getElementById('root') || document.getElementById('main');
   if (rootTag) {
