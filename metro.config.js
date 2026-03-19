@@ -10,6 +10,9 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       'expo-file-system': require.resolve('./stubs/expo-file-system.js'),
       'expo-image-manipulator': require.resolve('./stubs/expo-image-manipulator.js'),
       'expo-image-picker': require.resolve('./stubs/expo-image-picker.js'),
+      // expo-font v55 (in package-lock) uses registerWebModule which doesn't
+      // exist in expo-modules-core v1.12.26 (SDK 51). Use a safe no-op stub.
+      'expo-font': require.resolve('./stubs/expo-font.js'),
     };
     if (webStubs[moduleName]) {
       return { filePath: webStubs[moduleName], type: 'sourceFile' };
