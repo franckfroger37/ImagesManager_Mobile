@@ -1,19 +1,22 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ScrollView, Image, ActivityIndicator, SafeAreaView, Modal,
+  ScrollView, Image, ActivityIndicator, SafeAreaView, Modal, Linking,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { getSettings, CATEGORIES } from '../services/storageService';
 import { processImage, generateRefName, getFileSize } from '../services/imageService';
-import { publishProduct, fetchCategories } from '../services/woocommerceService';
+import {
+  publishProduct, fetchCategories,
+  updateProductPrice, unpublishProduct, deleteProduct,
+} from '../services/woocommerceService';
 
 export default function PublishScreen({ route, navigation }) {
   const { uri, fileName, cropParams } = route.params;
 
   const [price, setPrice] = useState('');
-  const [categories, setCategories] = useState(CATEGORIES); // liste locale par défaut
+  const [categories, setCategories] = useState(CATEGORIES);
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -21,26 +24,26 @@ export default function PublishScreen({ route, navigation }) {
   const [progressType, setProgressType] = useState('info');
   const [settings, setSettings] = useState(null);
   const [refName] = useState(() => generateRefName(fileName));
-  const [done, setDone] = useState(false);
 
-  // Se relance à chaque focus : recharge settings ET catégories WooCommerce
+  // État post-publication
+  const [publishedProduct, setPublishedProduct] = useState(null); // {id, permalink}
+  const [correctPrice, setCorrectPrice] = useState('');
+  const [postActionMsg, setPostActionMsg] = useState(null); // {ok, msg}
+  const [postActioning, setPostActioning] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       getSettings().then(async (s) => {
         setSettings(s);
-
-        // Charger les catégories réelles depuis WooCommerce
         const wooCats = await fetchCategories(s);
         if (wooCats && wooCats.length > 0) {
           setCategories(wooCats);
-          // Sélectionner la catégorie par défaut (settings) ou la première
           const defaultCat =
             wooCats.find((c) => c.value === s.defaultCategory) ||
             wooCats.find((c) => c.value === selectedCategory.value) ||
             wooCats[0];
           setSelectedCategory(defaultCat);
         } else {
-          // Fallback : liste locale
           setCategories(CATEGORIES);
           const defaultCat = CATEGORIES.find((c) => c.value === s.defaultCategory) || CATEGORIES[0];
           setSelectedCategory(defaultCat);
@@ -51,10 +54,7 @@ export default function PublishScreen({ route, navigation }) {
 
   const settingsOk = settings?.wooUrl && settings?.consumerKey && settings?.consumerSecret;
 
-  const setMsg = (msg, type = 'info') => {
-    setProgressMsg(msg);
-    setProgressType(type);
-  };
+  const setMsg = (msg, type = 'info') => { setProgressMsg(msg); setProgressType(type); };
 
   const handlePublish = async () => {
     if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
@@ -67,7 +67,7 @@ export default function PublishScreen({ route, navigation }) {
     }
 
     setProcessing(true);
-    setDone(false);
+    setPublishedProduct(null);
     try {
       setMsg('⚙️ Traitement de l\'image en cours...', 'info');
       const processedUri = await processImage(uri, cropParams, {
@@ -86,13 +86,15 @@ export default function PublishScreen({ route, navigation }) {
         description: '',
         categorySlug:  selectedCategory.value,
         categoryLabel: selectedCategory.label,
-        categoryId:    selectedCategory.id || null, // ID direct si chargé depuis WooCommerce
+        categoryId:    selectedCategory.id || null,
         settings,
         onProgress: (msg) => setMsg(msg, 'info'),
       });
 
       setProcessing(false);
-      setDone(true);
+      setPublishedProduct(result); // {id, permalink}
+      setCorrectPrice(price);
+      setPostActionMsg(null);
       setMsg(`✅ Produit "${refName}" publié avec succès !`, 'success');
     } catch (error) {
       setProcessing(false);
@@ -100,16 +102,63 @@ export default function PublishScreen({ route, navigation }) {
     }
   };
 
+  // ── Actions post-publication ────────────────────────────────────────────────
+
+  const handleCorrectPrice = async () => {
+    const p = parseFloat(correctPrice);
+    if (!p || p <= 0) {
+      setPostActionMsg({ ok: false, msg: '⚠️ Prix invalide.' });
+      return;
+    }
+    setPostActioning(true);
+    try {
+      await updateProductPrice(publishedProduct.id, p, settings);
+      setPostActionMsg({ ok: true, msg: `✅ Prix mis à jour : ${p.toFixed(2)} €` });
+    } catch (e) {
+      setPostActionMsg({ ok: false, msg: `❌ ${e.message}` });
+    } finally { setPostActioning(false); }
+  };
+
+  const handleUnpublish = async () => {
+    setPostActioning(true);
+    try {
+      await unpublishProduct(publishedProduct.id, settings);
+      setPostActionMsg({ ok: true, msg: '✅ Produit dépublié (brouillon). Il n\'apparaît plus dans la boutique.' });
+    } catch (e) {
+      setPostActionMsg({ ok: false, msg: `❌ ${e.message}` });
+    } finally { setPostActioning(false); }
+  };
+
+  const handleDeleteAndRestart = async () => {
+    setPostActioning(true);
+    try {
+      await deleteProduct(publishedProduct.id, settings);
+      // Retour à l'écran de recadrage avec les mêmes paramètres
+      navigation.goBack();
+    } catch (e) {
+      setPostActionMsg({ ok: false, msg: `❌ Suppression échouée : ${e.message}` });
+      setPostActioning(false);
+    }
+  };
+
+  const handleOpenSite = () => {
+    if (publishedProduct?.permalink) {
+      Linking.openURL(publishedProduct.permalink);
+    }
+  };
+
+  // ── Couleurs messages ───────────────────────────────────────────────────────
   const pc = {
-    info:    { bg: '#f0fdf4', border: '#16a34a', text: '#15803d' },
+    info:    { bg: '#eff6ff', border: '#3b82f6', text: '#1d4ed8' },
     error:   { bg: '#fff1f2', border: '#e11d48', text: '#be123c' },
     success: { bg: '#f0fdf4', border: '#16a34a', text: '#15803d' },
-  }[progressType] || { bg: '#f0fdf4', border: '#16a34a', text: '#15803d' };
+  }[progressType] || { bg: '#eff6ff', border: '#3b82f6', text: '#1d4ed8' };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
+        {/* ── Aperçu photo ── */}
         <View style={styles.previewCard}>
           <Image source={{ uri }} style={styles.preview} resizeMode="cover" />
           <View style={styles.previewInfo}>
@@ -118,60 +167,60 @@ export default function PublishScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* Bannière si paramètres manquants */}
+        {/* ── Bannière settings manquants ── */}
         {settings && !settingsOk && (
           <TouchableOpacity style={styles.warningBanner} onPress={() => navigation.navigate('Settings')}>
             <Ionicons name="warning-outline" size={18} color="#92400e" />
-            <Text style={styles.warningText}>
-              Paramètres WooCommerce non configurés — tapez ici pour les saisir
-            </Text>
+            <Text style={styles.warningText}>Paramètres WooCommerce non configurés — tapez ici</Text>
             <Ionicons name="chevron-forward" size={16} color="#92400e" />
           </TouchableOpacity>
         )}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>💰 Prix de vente (€)</Text>
-          <TextInput
-            style={styles.priceInput}
-            value={price}
-            onChangeText={setPrice}
-            placeholder="0.00"
-            placeholderTextColor="#9ca3af"
-            keyboardType="decimal-pad"
-            returnKeyType="done"
-          />
-        </View>
+        {/* ── Formulaire (masqué après publication) ── */}
+        {!publishedProduct && (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>💰 Prix de vente (€)</Text>
+              <TextInput
+                style={styles.priceInput}
+                value={price}
+                onChangeText={setPrice}
+                placeholder="0.00"
+                placeholderTextColor="#9ca3af"
+                keyboardType="decimal-pad"
+                returnKeyType="done"
+              />
+            </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>🏷️ Catégorie</Text>
-          <TouchableOpacity style={styles.categorySelector} onPress={() => setShowCategoryPicker(true)}>
-            <Text style={styles.categorySelectorText}>{selectedCategory.label}</Text>
-            <Ionicons name="chevron-down" size={20} color="#6b7280" />
-          </TouchableOpacity>
-        </View>
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>🏷️ Catégorie</Text>
+              <TouchableOpacity style={styles.categorySelector} onPress={() => setShowCategoryPicker(true)}>
+                <Text style={styles.categorySelectorText}>{selectedCategory.label}</Text>
+                <Ionicons name="chevron-down" size={20} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>📐 Paramètres image</Text>
-          <View style={styles.infoRow}>
-            <Ionicons name="resize-outline" size={16} color="#6b7280" />
-            <Text style={styles.infoText}>{settings?.targetWidth || 800} × {settings?.targetHeight || 1200} px</Text>
-            <Ionicons name="speedometer-outline" size={16} color="#6b7280" style={{ marginLeft: 16 }} />
-            <Text style={styles.infoText}>Qualité {settings?.targetQuality || 85}%</Text>
-          </View>
-        </View>
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>📐 Paramètres image</Text>
+              <View style={styles.infoRow}>
+                <Ionicons name="resize-outline" size={16} color="#6b7280" />
+                <Text style={styles.infoText}>{settings?.targetWidth || 800} × {settings?.targetHeight || 1200} px</Text>
+                <Ionicons name="speedometer-outline" size={16} color="#6b7280" style={{ marginLeft: 16 }} />
+                <Text style={styles.infoText}>Qualité {settings?.targetQuality || 85}%</Text>
+              </View>
+            </View>
+          </>
+        )}
 
+        {/* ── Message de progression ── */}
         {progressMsg ? (
           <View style={[styles.progressBox, { backgroundColor: pc.bg, borderLeftColor: pc.border }]}>
             <Text style={[styles.progressText, { color: pc.text }]}>{progressMsg}</Text>
           </View>
         ) : null}
 
-        {done ? (
-          <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.navigate('Home')}>
-            <Ionicons name="home-outline" size={22} color="#fff" />
-            <Text style={styles.publishBtnText}>Retour à l'accueil</Text>
-          </TouchableOpacity>
-        ) : (
+        {/* ── Bouton publier ── */}
+        {!publishedProduct && (
           <TouchableOpacity
             style={[styles.publishBtn, (processing || !settingsOk) && styles.publishBtnDisabled]}
             onPress={handlePublish}
@@ -186,13 +235,108 @@ export default function PublishScreen({ route, navigation }) {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} disabled={processing}>
-          <Ionicons name="crop-outline" size={18} color="#6b7280" />
-          <Text style={styles.backBtnText}>Modifier le recadrage</Text>
-        </TouchableOpacity>
+        {/* ── Panneau actions post-publication ── */}
+        {publishedProduct && (
+          <View style={styles.postCard}>
+            <View style={styles.postHeader}>
+              <Ionicons name="checkmark-circle" size={28} color="#16a34a" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.postTitle}>Produit publié</Text>
+                <Text style={styles.postSub}>ID #{publishedProduct.id} · {refName}</Text>
+              </View>
+              {publishedProduct.permalink ? (
+                <TouchableOpacity style={styles.viewBtn} onPress={handleOpenSite}>
+                  <Ionicons name="eye-outline" size={16} color="#2563eb" />
+                  <Text style={styles.viewBtnText}>Voir</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Corriger le prix */}
+            <Text style={styles.actionLabel}>✏️ Corriger le prix</Text>
+            <View style={styles.priceRow}>
+              <TextInput
+                style={styles.priceCorrectInput}
+                value={correctPrice}
+                onChangeText={setCorrectPrice}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor="#9ca3af"
+              />
+              <Text style={styles.euroSign}>€</Text>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.actionBtnBlue, postActioning && styles.actionBtnDisabled]}
+                onPress={handleCorrectPrice}
+                disabled={postActioning}
+              >
+                {postActioning
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={styles.actionBtnText}>Mettre à jour</Text>}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Message résultat action */}
+            {postActionMsg && (
+              <View style={[styles.postActionMsg,
+                postActionMsg.ok ? styles.postActionMsgOk : styles.postActionMsgErr]}>
+                <Text style={[styles.postActionMsgText,
+                  postActionMsg.ok ? styles.postActionMsgTextOk : styles.postActionMsgTextErr]}>
+                  {postActionMsg.msg}
+                </Text>
+              </View>
+            )}
+
+            {/* Dépublier */}
+            <TouchableOpacity
+              style={[styles.actionRow, postActioning && styles.actionBtnDisabled]}
+              onPress={handleUnpublish}
+              disabled={postActioning}
+            >
+              <Ionicons name="eye-off-outline" size={20} color="#d97706" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.actionRowTitle}>🚫 Dépublier</Text>
+                <Text style={styles.actionRowSub}>Passe en brouillon — invisible dans la boutique</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#d97706" />
+            </TouchableOpacity>
+
+            {/* Supprimer et recommencer */}
+            <TouchableOpacity
+              style={[styles.actionRow, styles.actionRowDanger, postActioning && styles.actionBtnDisabled]}
+              onPress={handleDeleteAndRestart}
+              disabled={postActioning}
+            >
+              <Ionicons name="trash-outline" size={20} color="#dc2626" />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.actionRowTitle, { color: '#dc2626' }]}>🗑️ Supprimer et recommencer</Text>
+                <Text style={styles.actionRowSub}>Supprime le produit · retour au recadrage</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#dc2626" />
+            </TouchableOpacity>
+
+            {/* Nouveau produit */}
+            <TouchableOpacity style={styles.newProductBtn} onPress={() => navigation.navigate('Home')}>
+              <Ionicons name="home-outline" size={20} color="#fff" />
+              <Text style={styles.newProductBtnText}>🏠 Nouveau produit</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── Retour recadrage (avant publication) ── */}
+        {!publishedProduct && (
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} disabled={processing}>
+            <Ionicons name="crop-outline" size={18} color="#6b7280" />
+            <Text style={styles.backBtnText}>Modifier le recadrage</Text>
+          </TouchableOpacity>
+        )}
 
       </ScrollView>
 
+      {/* ── Sélecteur catégorie ── */}
       <Modal visible={showCategoryPicker} transparent animationType="slide" onRequestClose={() => setShowCategoryPicker(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
@@ -240,12 +384,42 @@ const styles = StyleSheet.create({
   infoText:       { fontSize: 14, color: '#374151' },
   progressBox:    { borderLeftWidth: 3, borderRadius: 8, padding: 12, marginBottom: 16 },
   progressText:   { fontSize: 13 },
-  publishBtn:     { backgroundColor: '#16a34a', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, elevation: 3, shadowColor: '#16a34a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 },
+  publishBtn:         { backgroundColor: '#16a34a', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, elevation: 3, shadowColor: '#16a34a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 },
   publishBtnDisabled: { backgroundColor: '#86efac', elevation: 0 },
-  publishBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  doneBtn:        { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  publishBtnText:     { color: '#fff', fontSize: 17, fontWeight: '700' },
   backBtn:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, marginTop: 8 },
   backBtnText:    { color: '#6b7280', fontSize: 14 },
+
+  // Post-publication
+  postCard:       { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#d1fae5', elevation: 2 },
+  postHeader:     { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  postTitle:      { fontSize: 16, fontWeight: '700', color: '#15803d' },
+  postSub:        { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  viewBtn:        { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: '#2563eb', backgroundColor: '#eff6ff' },
+  viewBtnText:    { fontSize: 13, color: '#2563eb', fontWeight: '600' },
+  divider:        { height: 1, backgroundColor: '#f3f4f6', marginVertical: 12 },
+  actionLabel:    { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
+  priceRow:       { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  priceCorrectInput: { flex: 1, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 10, fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  euroSign:       { fontSize: 18, color: '#6b7280', fontWeight: '600' },
+  actionBtn:      { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
+  actionBtnBlue:  { backgroundColor: '#2563eb' },
+  actionBtnDisabled: { opacity: 0.5 },
+  actionBtnText:  { color: '#fff', fontWeight: '700', fontSize: 13 },
+  postActionMsg:      { borderRadius: 8, padding: 10, marginBottom: 8, borderLeftWidth: 3 },
+  postActionMsgOk:    { backgroundColor: '#f0fdf4', borderLeftColor: '#16a34a' },
+  postActionMsgErr:   { backgroundColor: '#fff1f2', borderLeftColor: '#e11d48' },
+  postActionMsgText:  { fontSize: 13 },
+  postActionMsgTextOk:  { color: '#15803d' },
+  postActionMsgTextErr: { color: '#be123c' },
+  actionRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
+  actionRowDanger:{ borderTopWidth: 1, borderTopColor: '#fee2e2' },
+  actionRowTitle: { fontSize: 14, fontWeight: '600', color: '#d97706' },
+  actionRowSub:   { fontSize: 12, color: '#9ca3af', marginTop: 2 },
+  newProductBtn:  { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 8 },
+  newProductBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+
+  // Modal catégories
   modalOverlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet:     { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 34 },
   modalHeader:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },

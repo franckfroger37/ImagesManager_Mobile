@@ -176,3 +176,52 @@ export const publishProduct = async ({ processedImageUri, refName, price, descri
   onProgress?.(`✅ Produit #${result.id} publié !`);
   return result;
 };
+
+// ── Actions post-publication ──────────────────────────────────────────────────
+
+export const updateProductPrice = async (productId, newPrice, settings) => {
+  const { wooUrl, consumerKey, consumerSecret } = settings;
+  const response = await fetch(
+    `${wooUrl}/wp-json/wc/v3/products/${productId}?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ regular_price: newPrice.toString() }),
+    }
+  );
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || `Erreur ${response.status}`);
+  }
+  return true;
+};
+
+export const unpublishProduct = async (productId, settings) => {
+  const { wooUrl, consumerKey, consumerSecret } = settings;
+  const response = await fetch(
+    `${wooUrl}/wp-json/wc/v3/products/${productId}?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'draft' }),
+    }
+  );
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || `Erreur ${response.status}`);
+  }
+  return true;
+};
+
+export const deleteProduct = async (productId, settings) => {
+  const { wooUrl, consumerKey, consumerSecret } = settings;
+  const response = await fetch(
+    `${wooUrl}/wp-json/wc/v3/products/${productId}?force=true&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`,
+    { method: 'DELETE' }
+  );
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || `Erreur ${response.status}`);
+  }
+  return true;
+};
