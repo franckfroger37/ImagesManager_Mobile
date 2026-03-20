@@ -23,7 +23,29 @@
         flex: 1;
       }
     </style>
-  </head>
+  
+  <link rel="manifest" href="/ImagesManager_Mobile/manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Images Manager">
+  <link rel="apple-touch-icon" href="/ImagesManager_Mobile/icon-512.png">
+  <link rel="icon" type="image/png" href="/ImagesManager_Mobile/favicon.png">
+  <style>
+    #im-splash {
+      position:fixed;inset:0;background:#2563eb;
+      display:flex;flex-direction:column;
+      align-items:center;justify-content:center;z-index:99999;
+      font-family:Arial,Helvetica,sans-serif;
+      transition:opacity .4s;
+    }
+    #im-splash svg{margin-bottom:18px;}
+    #im-splash .t1{color:#fff;font-size:26px;font-weight:700;margin:0;}
+    #im-splash .t2{color:rgba(255,255,255,.6);font-size:13px;margin:6px 0 0;}
+  </style>
+
+</head>
 
   <body>
     <!-- Use static rendering with Expo Router to support running without JavaScript. -->
@@ -31,6 +53,38 @@
       You need to enable JavaScript to run this app.
     </noscript>
     <!-- The root element for your Expo app. -->
+    
+<div id="im-splash">
+  <svg width="88" height="88" viewBox="0 0 88 88" fill="none">
+    <rect width="88" height="88" rx="14" fill="rgba(255,255,255,.18)"/>
+    <rect x="10" y="26" width="68" height="42" rx="7" fill="white"/>
+    <circle cx="44" cy="47" r="13" fill="#2563eb"/>
+    <circle cx="44" cy="47" r="9" fill="white"/>
+    <circle cx="44" cy="47" r="5" fill="#2563eb"/>
+    <rect x="27" y="16" width="20" height="12" rx="4" fill="white"/>
+  </svg>
+  <p class="t1">Images Manager</p>
+  <p class="t2">Bijoux &amp; WooCommerce</p>
+</div>
+<script>
+  // Masque le splash après 1.8s (une fois le JS chargé)
+  window.addEventListener('load', function() {
+    var s = document.getElementById('im-splash');
+    if (s) {
+      setTimeout(function() {
+        s.style.opacity = '0';
+        setTimeout(function() { s.remove(); }, 450);
+      }, 1800);
+    }
+  });
+  // Enregistrement du service worker (PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/ImagesManager_Mobile/sw.js');
+    });
+  }
+</script>
+
     <div id="root"></div>
   <script src="/ImagesManager_Mobile/_expo/static/js/web/index-8d9f029e6c6c1559fee15f7834c43f66.js" defer></script>
 </body>
