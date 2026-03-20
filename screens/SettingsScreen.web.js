@@ -1,10 +1,11 @@
 // Version WEB de SettingsScreen
-// - Scroll fixé (hauteur 100vh, overflow auto)
-// - Alert.alert remplacé par messages in-screen
+// - Scroll via SafeAreaView flex:1 + ScrollView flex:1 (fonctionne grâce au
+//   cardStyle overflow:'hidden' défini dans App.web.js)
+// - Alert.alert remplacé par messages in-screen colorés
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ScrollView, ActivityIndicator,
+  ScrollView, ActivityIndicator, SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getSettings, saveSettings } from '../services/storageService';
@@ -16,9 +17,9 @@ export default function SettingsScreen({ navigation }) {
   const [testingWoo, setTestingWoo] = useState(false);
   const [testingWp, setTestingWp] = useState(false);
   const [showSecrets, setShowSecrets] = useState(false);
-  const [wooStatus, setWooStatus] = useState(null);   // { ok, msg }
-  const [wpStatus, setWpStatus] = useState(null);     // { ok, msg }
-  const [saveStatus, setSaveStatus] = useState(null); // { ok, msg }
+  const [wooStatus, setWooStatus]   = useState(null); // {ok, msg}
+  const [wpStatus, setWpStatus]     = useState(null);
+  const [saveStatus, setSaveStatus] = useState(null);
 
   useEffect(() => { getSettings().then(setSettings); }, []);
 
@@ -51,7 +52,7 @@ export default function SettingsScreen({ navigation }) {
     setWpStatus(null);
     try {
       const name = await testWpAuth(settings);
-      setWpStatus({ ok: true, msg: `✅ Authentification WordPress OK — connecté en tant que : ${name}` });
+      setWpStatus({ ok: true, msg: `✅ Authentification OK — connecté en tant que : ${name}` });
     } catch (e) {
       setWpStatus({ ok: false, msg: `❌ Échec : ${e.message}` });
     } finally { setTestingWp(false); }
@@ -60,8 +61,8 @@ export default function SettingsScreen({ navigation }) {
   const StatusBadge = ({ status }) => {
     if (!status) return null;
     return (
-      <View style={[styles.statusBadge, status.ok ? styles.statusOk : styles.statusErr]}>
-        <Text style={[styles.statusText, status.ok ? styles.statusTextOk : styles.statusTextErr]}>
+      <View style={[styles.badge, status.ok ? styles.badgeOk : styles.badgeErr]}>
+        <Text style={[styles.badgeText, status.ok ? styles.badgeTextOk : styles.badgeTextErr]}>
           {status.msg}
         </Text>
       </View>
@@ -71,11 +72,14 @@ export default function SettingsScreen({ navigation }) {
   const q = settings.targetQuality || 85;
 
   return (
-    // div avec hauteur 100vh pour que le scroll fonctionne sur web
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', overflow: 'hidden' }}>
-      <div style={{ flex: 1, overflowY: 'auto', padding: 16, paddingBottom: 40 }}>
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
 
-        {/* Card WooCommerce */}
+        {/* ── WooCommerce ── */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="storefront-outline" size={20} color="#2563eb" />
@@ -126,7 +130,7 @@ export default function SettingsScreen({ navigation }) {
           <StatusBadge status={wooStatus} />
         </View>
 
-        {/* Card WordPress */}
+        {/* ── WordPress ── */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="lock-closed-outline" size={20} color="#7c3aed" />
@@ -163,12 +167,12 @@ export default function SettingsScreen({ navigation }) {
             {testingWp
               ? <ActivityIndicator size="small" color="#7c3aed" />
               : <Ionicons name="person-circle-outline" size={18} color="#7c3aed" />}
-            <Text style={[styles.testBtnText, styles.testBtnTextPurple]}>Tester l'authentification WordPress</Text>
+            <Text style={[styles.testBtnText, { color: '#7c3aed' }]}>Tester l'authentification WordPress</Text>
           </TouchableOpacity>
           <StatusBadge status={wpStatus} />
         </View>
 
-        {/* Card image */}
+        {/* ── Image ── */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="image-outline" size={20} color="#059669" />
@@ -176,7 +180,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
 
           <View style={styles.row}>
-            <View style={styles.halfField}>
+            <View style={styles.half}>
               <Text style={styles.label}>Largeur (px)</Text>
               <TextInput
                 style={styles.input}
@@ -185,7 +189,7 @@ export default function SettingsScreen({ navigation }) {
                 keyboardType="number-pad"
               />
             </View>
-            <View style={styles.halfField}>
+            <View style={styles.half}>
               <Text style={styles.label}>Hauteur (px)</Text>
               <TextInput
                 style={styles.input}
@@ -197,24 +201,25 @@ export default function SettingsScreen({ navigation }) {
           </View>
 
           <Text style={styles.label}>Qualité de compression ({q}%)</Text>
-          <View style={styles.qualityBtns}>
+          <View style={styles.qualityRow}>
             {[60, 70, 75, 80, 85, 90, 95].map((qv) => (
               <TouchableOpacity
                 key={qv}
-                style={[styles.qualityBtn, q === qv && styles.qualityBtnActive]}
+                style={[styles.qualityBtn, q === qv && styles.qualityBtnOn]}
                 onPress={() => update('targetQuality', qv)}
               >
-                <Text style={[styles.qualityBtnText, q === qv && styles.qualityBtnTextActive]}>{qv}</Text>
+                <Text style={[styles.qualityBtnText, q === qv && styles.qualityBtnTextOn]}>{qv}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
           <Text style={styles.infoText}>
-            📐 {settings.targetWidth || 800} × {settings.targetHeight || 1200} px — ratio {((settings.targetWidth || 800) / (settings.targetHeight || 1200)).toFixed(2)}
+            📐 {settings.targetWidth || 800} × {settings.targetHeight || 1200} px
+            {' '}— ratio {((settings.targetWidth || 800) / (settings.targetHeight || 1200)).toFixed(2)}
           </Text>
         </View>
 
-        {/* Bouton sauvegarder */}
+        {/* ── Sauvegarder ── */}
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
           {saving
             ? <ActivityIndicator color="#fff" />
@@ -225,40 +230,53 @@ export default function SettingsScreen({ navigation }) {
         <StatusBadge status={saveStatus} />
 
         <Text style={styles.version}>Images Manager Mobile v1.0</Text>
-      </div>
-    </div>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  label: { fontSize: 12, fontWeight: '600', color: '#6b7280', marginBottom: 6, marginTop: 10, textTransform: 'uppercase', letterSpacing: 0.3 },
-  input: { backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, padding: 12, fontSize: 14, color: '#111827' },
-  hint: { backgroundColor: '#f5f3ff', borderRadius: 8, padding: 10, marginBottom: 4 },
-  hintText: { fontSize: 13, color: '#6b7280', lineHeight: 20 },
-  toggleSecrets: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingVertical: 4 },
-  toggleSecretsText: { fontSize: 13, color: '#6b7280' },
-  testBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: '#2563eb', backgroundColor: '#eff6ff' },
-  testBtnPurple: { borderColor: '#7c3aed', backgroundColor: '#f5f3ff' },
-  testBtnText: { color: '#2563eb', fontSize: 13, fontWeight: '600' },
-  testBtnTextPurple: { color: '#7c3aed' },
-  statusBadge: { borderRadius: 8, padding: 10, marginTop: 10 },
-  statusOk: { backgroundColor: '#f0fdf4', borderLeftWidth: 3, borderLeftColor: '#16a34a' },
-  statusErr: { backgroundColor: '#fff1f2', borderLeftWidth: 3, borderLeftColor: '#e11d48' },
-  statusText: { fontSize: 13 },
-  statusTextOk: { color: '#15803d' },
-  statusTextErr: { color: '#be123c' },
-  row: { flexDirection: 'row', gap: 12 },
-  halfField: { flex: 1 },
-  qualityBtns: { flexDirection: 'row', gap: 4, marginTop: 8, flexWrap: 'wrap' },
-  qualityBtn: { flex: 1, minWidth: 36, paddingVertical: 8, backgroundColor: '#f3f4f6', borderRadius: 6, alignItems: 'center' },
-  qualityBtnActive: { backgroundColor: '#2563eb' },
-  qualityBtnText: { fontSize: 12, color: '#374151' },
-  qualityBtnTextActive: { color: '#fff', fontWeight: '700' },
-  infoText: { fontSize: 12, color: '#6b7280', marginTop: 10 },
-  saveBtn: { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  version: { textAlign: 'center', color: '#9ca3af', fontSize: 12, marginTop: 16, marginBottom: 8 },
+  container:      { flex: 1, backgroundColor: '#f8fafc' },
+  scroll:         { flex: 1 },
+  scrollContent:  { padding: 16, paddingBottom: 40 },
+
+  card:           { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 },
+  cardHeader:     { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  cardTitle:      { fontSize: 16, fontWeight: '700', color: '#111827' },
+
+  label:          { fontSize: 11, fontWeight: '700', color: '#6b7280', marginBottom: 6, marginTop: 12, textTransform: 'uppercase', letterSpacing: 0.4 },
+  input:          { backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, padding: 12, fontSize: 14, color: '#111827' },
+
+  hint:           { backgroundColor: '#f5f3ff', borderRadius: 8, padding: 10, marginBottom: 4 },
+  hintText:       { fontSize: 13, color: '#6b7280', lineHeight: 20 },
+
+  toggleSecrets:      { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingVertical: 4 },
+  toggleSecretsText:  { fontSize: 13, color: '#6b7280' },
+
+  testBtn:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14, paddingVertical: 11, borderRadius: 8, borderWidth: 1.5, borderColor: '#2563eb', backgroundColor: '#eff6ff' },
+  testBtnPurple:  { borderColor: '#7c3aed', backgroundColor: '#f5f3ff' },
+  testBtnText:    { color: '#2563eb', fontSize: 13, fontWeight: '600' },
+
+  badge:          { borderRadius: 8, padding: 10, marginTop: 10, borderLeftWidth: 3 },
+  badgeOk:        { backgroundColor: '#f0fdf4', borderLeftColor: '#16a34a' },
+  badgeErr:       { backgroundColor: '#fff1f2', borderLeftColor: '#e11d48' },
+  badgeText:      { fontSize: 13 },
+  badgeTextOk:    { color: '#15803d' },
+  badgeTextErr:   { color: '#be123c' },
+
+  row:            { flexDirection: 'row', gap: 12 },
+  half:           { flex: 1 },
+
+  qualityRow:         { flexDirection: 'row', gap: 4, marginTop: 8, flexWrap: 'wrap' },
+  qualityBtn:         { flex: 1, minWidth: 36, paddingVertical: 9, backgroundColor: '#f3f4f6', borderRadius: 6, alignItems: 'center' },
+  qualityBtnOn:       { backgroundColor: '#2563eb' },
+  qualityBtnText:     { fontSize: 12, color: '#374151', fontWeight: '500' },
+  qualityBtnTextOn:   { color: '#fff', fontWeight: '700' },
+
+  infoText:       { fontSize: 12, color: '#6b7280', marginTop: 10 },
+
+  saveBtn:        { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, shadowColor: '#2563eb', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
+  saveBtnText:    { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  version:        { textAlign: 'center', color: '#9ca3af', fontSize: 12, marginTop: 16, marginBottom: 8 },
 });

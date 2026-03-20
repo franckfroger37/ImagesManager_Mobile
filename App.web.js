@@ -26,7 +26,9 @@ export default function App() {
             headerTintColor: '#fff',
             headerTitleStyle: { fontWeight: '700', fontSize: 18 },
             headerBackTitleVisible: false,
-            cardStyle: { backgroundColor: '#f8fafc' },
+            // overflow: 'hidden' + flex: 1 = indispensable pour que
+            // ScrollView fonctionne à l'intérieur des écrans sur web
+            cardStyle: { backgroundColor: '#f8fafc', flex: 1, overflow: 'hidden' },
           }}
         >
           <Stack.Screen
