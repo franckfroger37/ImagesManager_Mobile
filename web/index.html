@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>Images Manager</title>
 
-    <!-- PWA : manifest et icônes -->
+    <!-- PWA -->
     <link rel="manifest" href="/ImagesManager_Mobile/manifest.json" />
     <meta name="theme-color" content="#2563eb" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -18,44 +18,27 @@
 
     <style id="expo-reset">
       html, body { height: 100%; }
-      /* overflow: visible sur body pour que Chrome puisse afficher sa barre d'adresse */
       body { overflow: visible; }
-      #root {
-        display: flex;
-        flex: 1;
-        height: 100%;
-        /* Le scroll est géré dans #root, pas dans body */
-        overflow: hidden;
-      }
+      #root { display: flex; flex: 1; height: 100%; overflow: hidden; }
     </style>
-
-    <!-- Splash screen -->
     <style>
       #im-splash {
-        position: fixed;
-        inset: 0;
-        background: #2563eb;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 99999;
-        font-family: Arial, Helvetica, sans-serif;
+        position: fixed; inset: 0; background: #2563eb;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        z-index: 99999; font-family: Arial, sans-serif;
         transition: opacity 0.4s ease;
       }
-      #im-splash svg { margin-bottom: 18px; }
-      #im-splash .t1 { color: #fff; font-size: 26px; font-weight: 700; margin: 0; }
-      #im-splash .t2 { color: rgba(255,255,255,0.6); font-size: 13px; margin: 6px 0 0; }
+      #im-splash .t1 { color:#fff; font-size:26px; font-weight:700; margin:0; }
+      #im-splash .t2 { color:rgba(255,255,255,.6); font-size:13px; margin:6px 0 0; }
     </style>
   </head>
-
   <body>
     <noscript>Activez JavaScript pour utiliser cette application.</noscript>
 
-    <!-- Splash screen (sibling de #root) -->
     <div id="im-splash">
-      <svg width="88" height="88" viewBox="0 0 88 88" fill="none">
-        <rect width="88" height="88" rx="14" fill="rgba(255,255,255,0.18)"/>
+      <svg width="88" height="88" viewBox="0 0 88 88" fill="none" style="margin-bottom:18px">
+        <rect width="88" height="88" rx="14" fill="rgba(255,255,255,.18)"/>
         <rect x="10" y="26" width="68" height="42" rx="7" fill="white"/>
         <circle cx="44" cy="47" r="13" fill="#2563eb"/>
         <circle cx="44" cy="47" r="9" fill="white"/>
@@ -66,23 +49,34 @@
       <p class="t2">Bijoux &amp; WooCommerce</p>
     </div>
 
-    <!-- Racine React -->
     <div id="root"></div>
 
     <script>
-      window.addEventListener('load', function () {
+      // ── Capture beforeinstallprompt AVANT que React charge ──────────────
+      // Stocké dans window.__installPrompt pour que HomeScreen le retrouve
+      window.__installPrompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__installPrompt = e;
+        // Notifie React si déjà monté
+        window.dispatchEvent(new CustomEvent('pwa-installable'));
+      });
+
+      window.addEventListener('load', function() {
+        // Masque le splash après 1.8s
         var s = document.getElementById('im-splash');
         if (s) {
-          setTimeout(function () {
+          setTimeout(function() {
             s.style.opacity = '0';
-            setTimeout(function () { s.remove(); }, 450);
+            setTimeout(function() { s.remove(); }, 450);
           }, 1800);
         }
+        // Service Worker
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker
             .register('/ImagesManager_Mobile/sw.js')
-            .then(function () { console.log('SW enregistré'); })
-            .catch(function (e) { console.warn('SW erreur:', e); });
+            .then(function() { console.log('[PWA] SW enregistré'); })
+            .catch(function(e) { console.warn('[PWA] SW erreur:', e); });
         }
       });
     </script>
