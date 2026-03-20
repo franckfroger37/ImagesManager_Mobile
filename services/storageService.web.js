@@ -1,7 +1,6 @@
 // Version WEB de storageService
-// Stratégie double : localStorage (persistant) + cache mémoire (session)
-// Le cache mémoire garantit que les settings sont disponibles immédiatement
-// après un save, même si localStorage échoue à la relecture.
+// localStorage est synchrone — on l'exploite directement sans async/await
+// pour éviter les race conditions dans les composants React.
 
 const SETTINGS_KEY = 'images_manager_settings';
 
@@ -25,40 +24,26 @@ export const CATEGORIES = [
   { label: 'Broches',            value: 'broches' },
 ];
 
-// Cache mémoire — partagé entre tous les écrans (même module = même instance)
-let _cache = null;
-
-export const getSettings = async () => {
-  // 1. Cache mémoire (priorité — instantané)
-  if (_cache) return { ..._cache };
-
-  // 2. localStorage (persistant entre rechargements)
+// ── Lecture synchrone ────────────────────────────────────────────────────────
+// Utilisée comme initializer de useState() → pas de useEffect, pas de race.
+export const getSettingsSync = () => {
   try {
     const stored = window.localStorage.getItem(SETTINGS_KEY);
-    if (stored) {
-      _cache = { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
-      return { ..._cache };
-    }
-  } catch (e) {
-    console.warn('[storageService] localStorage read error:', e);
-  }
-
-  // 3. Defaults
-  _cache = { ...DEFAULT_SETTINGS };
-  return { ..._cache };
+    if (stored) return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
+  } catch (e) { /* localStorage indisponible */ }
+  return { ...DEFAULT_SETTINGS };
 };
 
-export const saveSettings = async (settings) => {
-  // Mise à jour immédiate du cache mémoire
-  _cache = { ...settings };
+// ── Lecture asynchrone (rétrocompat avec useFocusEffect dans PublishScreen) ──
+export const getSettings = async () => getSettingsSync();
 
-  // Persistance dans localStorage
+// ── Écriture ─────────────────────────────────────────────────────────────────
+export const saveSettings = async (settings) => {
   try {
     window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     return true;
   } catch (e) {
-    console.warn('[storageService] localStorage write error:', e);
-    // Le cache mémoire est quand même mis à jour → l'appli fonctionne pour la session
-    return true;
+    console.error('[storageService] write error:', e);
+    return false;
   }
 };
