@@ -7,12 +7,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { getSettings, CATEGORIES } from '../services/storageService';
 import { processImage, generateRefName, getFileSize } from '../services/imageService';
-import { publishProduct } from '../services/woocommerceService';
+import { publishProduct, fetchCategories } from '../services/woocommerceService';
 
 export default function PublishScreen({ route, navigation }) {
   const { uri, fileName, cropParams } = route.params;
 
   const [price, setPrice] = useState('');
+  const [categories, setCategories] = useState(CATEGORIES); // liste locale par défaut
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -22,14 +23,28 @@ export default function PublishScreen({ route, navigation }) {
   const [refName] = useState(() => generateRefName(fileName));
   const [done, setDone] = useState(false);
 
-  // useFocusEffect = se relance à chaque fois que l'écran est affiché,
-  // y compris quand on revient depuis l'écran Paramètres
+  // Se relance à chaque focus : recharge settings ET catégories WooCommerce
   useFocusEffect(
     useCallback(() => {
-      getSettings().then((s) => {
+      getSettings().then(async (s) => {
         setSettings(s);
-        const defaultCat = CATEGORIES.find((c) => c.value === s.defaultCategory) || CATEGORIES[0];
-        setSelectedCategory(defaultCat);
+
+        // Charger les catégories réelles depuis WooCommerce
+        const wooCats = await fetchCategories(s);
+        if (wooCats && wooCats.length > 0) {
+          setCategories(wooCats);
+          // Sélectionner la catégorie par défaut (settings) ou la première
+          const defaultCat =
+            wooCats.find((c) => c.value === s.defaultCategory) ||
+            wooCats.find((c) => c.value === selectedCategory.value) ||
+            wooCats[0];
+          setSelectedCategory(defaultCat);
+        } else {
+          // Fallback : liste locale
+          setCategories(CATEGORIES);
+          const defaultCat = CATEGORIES.find((c) => c.value === s.defaultCategory) || CATEGORIES[0];
+          setSelectedCategory(defaultCat);
+        }
       });
     }, [])
   );
@@ -71,6 +86,7 @@ export default function PublishScreen({ route, navigation }) {
         description: '',
         categorySlug:  selectedCategory.value,
         categoryLabel: selectedCategory.label,
+        categoryId:    selectedCategory.id || null, // ID direct si chargé depuis WooCommerce
         settings,
         onProgress: (msg) => setMsg(msg, 'info'),
       });
@@ -186,7 +202,7 @@ export default function PublishScreen({ route, navigation }) {
                 <Ionicons name="close" size={24} color="#374151" />
               </TouchableOpacity>
             </View>
-            {CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <TouchableOpacity
                 key={cat.value}
                 style={[styles.catOption, selectedCategory.value === cat.value && styles.catOptionSelected]}

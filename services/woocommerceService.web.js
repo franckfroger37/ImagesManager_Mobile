@@ -29,6 +29,23 @@ export const testWpAuth = async (settings) => {
   return data.name || wpUsername;
 };
 
+// ── Chargement des catégories réelles depuis WooCommerce ──────────────────────
+// Retourne [{label, value (slug), id}] ou null si erreur
+export const fetchCategories = async (settings) => {
+  const { wooUrl, consumerKey, consumerSecret } = settings;
+  if (!wooUrl || !consumerKey || !consumerSecret) return null;
+  try {
+    const resp = await fetch(
+      `${wooUrl}/wp-json/wc/v3/products/categories?per_page=100&orderby=name&order=asc&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`
+    );
+    if (!resp.ok) return null;
+    const cats = await resp.json();
+    return cats.map((c) => ({ label: c.name, value: c.slug, id: c.id }));
+  } catch (e) {
+    return null;
+  }
+};
+
 export const uploadImage = async (imageUri, refName, settings) => {
   const { wooUrl, wpUsername, wpAppPassword } = settings;
   const credentials = btoa(`${wpUsername}:${wpAppPassword}`);
@@ -59,36 +76,54 @@ export const uploadImage = async (imageUri, refName, settings) => {
   return data.id;
 };
 
-export const getCategoryId = async (categorySlug, categoryLabel, settings) => {
+// ── Résolution de l'ID catégorie ──────────────────────────────────────────────
+// Si categoryId est fourni directement (depuis fetchCategories), on l'utilise.
+// Sinon : cherche par slug, puis par nom, puis crée en dernier recours.
+export const getCategoryId = async (categorySlug, categoryLabel, settings, categoryId = null) => {
+  if (categoryId) return categoryId;
+
   const { wooUrl, consumerKey, consumerSecret } = settings;
+  const base = `${wooUrl}/wp-json/wc/v3/products/categories`;
+  const auth = `consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`;
 
-  const searchResp = await fetch(
-    `${wooUrl}/wp-json/wc/v3/products/categories?slug=${categorySlug}&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`
-  );
-  if (searchResp.ok) {
-    const cats = await searchResp.json();
-    if (cats.length > 0) return cats[0].id;
-  }
+  // 1. Recherche par slug exact
+  try {
+    const slugResp = await fetch(`${base}?slug=${encodeURIComponent(categorySlug)}&${auth}`);
+    if (slugResp.ok) {
+      const cats = await slugResp.json();
+      if (cats.length > 0) return cats[0].id;
+    }
+  } catch (_) {}
 
-  const createResp = await fetch(
-    `${wooUrl}/wp-json/wc/v3/products/categories?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`,
-    {
+  // 2. Recherche par nom (évite les doublons si le slug diffère)
+  try {
+    const nameResp = await fetch(`${base}?search=${encodeURIComponent(categoryLabel)}&${auth}`);
+    if (nameResp.ok) {
+      const cats = await nameResp.json();
+      if (cats.length > 0) return cats[0].id;
+    }
+  } catch (_) {}
+
+  // 3. Création uniquement si vraiment introuvable
+  try {
+    const createResp = await fetch(`${base}?${auth}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: categoryLabel, slug: categorySlug }),
+    });
+    if (createResp.ok) {
+      const cat = await createResp.json();
+      return cat.id;
     }
-  );
+  } catch (_) {}
 
-  if (createResp.ok) {
-    const cat = await createResp.json();
-    return cat.id;
-  }
   return null;
 };
 
-export const createProduct = async ({ refName, price, description, categorySlug, categoryLabel, imageId, settings }) => {
+export const createProduct = async ({ refName, price, description, categorySlug, categoryLabel, categoryId, imageId, settings }) => {
   const { wooUrl, consumerKey, consumerSecret } = settings;
-  const catId = await getCategoryId(categorySlug, categoryLabel, settings);
+  // Utilise l'ID direct si disponible (chargé depuis l'API), sinon résolution par slug/nom
+  const catId = await getCategoryId(categorySlug, categoryLabel, settings, categoryId);
 
   const productData = {
     name: refName,
@@ -121,7 +156,7 @@ export const createProduct = async ({ refName, price, description, categorySlug,
   return { id: data.id, permalink: data.permalink };
 };
 
-export const publishProduct = async ({ processedImageUri, refName, price, description, categorySlug, categoryLabel, settings, onProgress }) => {
+export const publishProduct = async ({ processedImageUri, refName, price, description, categorySlug, categoryLabel, categoryId, settings, onProgress }) => {
   let imageId = null;
 
   if (settings.wpUsername && settings.wpAppPassword) {
@@ -137,7 +172,7 @@ export const publishProduct = async ({ processedImageUri, refName, price, descri
   }
 
   onProgress?.('📦 Création du produit...');
-  const result = await createProduct({ refName, price, description, categorySlug, categoryLabel, imageId, settings });
+  const result = await createProduct({ refName, price, description, categorySlug, categoryLabel, categoryId, imageId, settings });
   onProgress?.(`✅ Produit #${result.id} publié !`);
   return result;
 };
