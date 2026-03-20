@@ -26,12 +26,11 @@ export default function ManageProductsScreen({ navigation }) {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
 
-  // Produit sélectionné pour le panneau d'actions
   const [selected,     setSelected]     = useState(null);
   const [showPanel,    setShowPanel]    = useState(false);
   const [correctPrice, setCorrectPrice] = useState('');
   const [actioning,    setActioning]    = useState(false);
-  const [actionMsg,    setActionMsg]    = useState(null); // {ok, msg}
+  const [actionMsg,    setActionMsg]    = useState(null);
 
   const loadProducts = useCallback(async (s) => {
     setLoading(true);
@@ -68,7 +67,6 @@ export default function ManageProductsScreen({ navigation }) {
     setActionMsg(null);
   };
 
-  // Met à jour localement la liste après une action
   const updateLocalProduct = (id, changes) => {
     setProducts((prev) => prev.map((p) => p.id === id ? { ...p, ...changes } : p));
     setSelected((prev) => prev ? { ...prev, ...changes } : prev);
@@ -99,7 +97,7 @@ export default function ManageProductsScreen({ navigation }) {
       if (isPublished) {
         await unpublishProduct(selected.id, settings);
         updateLocalProduct(selected.id, { status: 'draft' });
-        setActionMsg({ ok: true, msg: '✅ Produit dépublié — il n\'apparaît plus dans la boutique.' });
+        setActionMsg({ ok: true, msg: '✅ Produit dépublié.' });
       } else {
         await republishProduct(selected.id, settings);
         updateLocalProduct(selected.id, { status: 'publish' });
@@ -125,7 +123,6 @@ export default function ManageProductsScreen({ navigation }) {
     if (selected?.permalink) Linking.openURL(selected.permalink);
   };
 
-  // ── Rendu d'un produit dans la liste ────────────────────────────────────────
   const ProductRow = ({ product }) => {
     const st = STATUS_LABEL[product.status] || STATUS_LABEL.draft;
     return (
@@ -151,8 +148,6 @@ export default function ManageProductsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-
-      {/* ── En-tête avec bouton refresh ── */}
       <View style={styles.header}>
         <Text style={styles.headerCount}>
           {loading ? 'Chargement...' : `${products.length} produit${products.length > 1 ? 's' : ''}`}
@@ -164,7 +159,6 @@ export default function ManageProductsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* ── États ── */}
       {error && (
         <View style={styles.errorBox}>
           <Ionicons name="alert-circle-outline" size={18} color="#be123c" />
@@ -179,17 +173,14 @@ export default function ManageProductsScreen({ navigation }) {
         </View>
       )}
 
-      {/* ── Liste ── */}
       <ScrollView style={styles.list}>
         {products.map((p) => <ProductRow key={p.id} product={p} />)}
       </ScrollView>
 
-      {/* ── Panneau d'actions (modal) ── */}
       <Modal visible={showPanel} transparent animationType="slide" onRequestClose={closePanel}>
         <View style={styles.modalOverlay}>
           <View style={styles.panel}>
 
-            {/* En-tête du panneau */}
             <View style={styles.panelHeader}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.panelTitle} numberOfLines={1}>{selected?.name}</Text>
@@ -210,7 +201,6 @@ export default function ManageProductsScreen({ navigation }) {
 
             <View style={styles.divider} />
 
-            {/* Message résultat */}
             {actionMsg && (
               <View style={[styles.actionMsg, actionMsg.ok ? styles.actionMsgOk : styles.actionMsgErr]}>
                 <Text style={[styles.actionMsgText, actionMsg.ok ? styles.actionMsgTextOk : styles.actionMsgTextErr]}>
@@ -219,7 +209,7 @@ export default function ManageProductsScreen({ navigation }) {
               </View>
             )}
 
-            {/* Corriger le prix */}
+            {/* Corriger le prix — input compact + bouton bien visible */}
             <Text style={styles.actionLabel}>✏️ Corriger le prix</Text>
             <View style={styles.priceRow}>
               <TextInput
@@ -232,19 +222,18 @@ export default function ManageProductsScreen({ navigation }) {
               />
               <Text style={styles.euroSign}>€</Text>
               <TouchableOpacity
-                style={[styles.actionBtn, styles.actionBtnBlue, actioning && styles.disabled]}
+                style={[styles.updateBtn, actioning && styles.disabled]}
                 onPress={handleCorrectPrice}
                 disabled={actioning}
               >
                 {actioning
                   ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.actionBtnText}>Mettre à jour</Text>}
+                  : <Text style={styles.updateBtnText}>Mettre à jour</Text>}
               </TouchableOpacity>
             </View>
 
             <View style={styles.divider} />
 
-            {/* Publier / Dépublier */}
             {selected && (
               <TouchableOpacity
                 style={[styles.bigAction, actioning && styles.disabled]}
@@ -272,7 +261,6 @@ export default function ManageProductsScreen({ navigation }) {
               </TouchableOpacity>
             )}
 
-            {/* Supprimer */}
             <TouchableOpacity
               style={[styles.bigAction, styles.bigActionDanger, actioning && styles.disabled]}
               onPress={handleDelete}
@@ -312,7 +300,6 @@ const styles = StyleSheet.create({
   statusBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
   statusText:   { fontSize: 11, fontWeight: '600' },
 
-  // Modal panel
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   panel:        { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 16, paddingBottom: 34, paddingTop: 8 },
   panelHeader:  { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
@@ -330,12 +317,14 @@ const styles = StyleSheet.create({
   actionMsgTextOk:  { color: '#15803d' },
   actionMsgTextErr: { color: '#be123c' },
   actionLabel:  { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
-  priceRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  priceInput:   { flex: 1, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 10, fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
-  euroSign:     { fontSize: 18, color: '#6b7280', fontWeight: '600' },
-  actionBtn:    { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
-  actionBtnBlue: { backgroundColor: '#2563eb' },
-  actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+
+  // Ligne prix : input compact à gauche, bouton bien visible à droite
+  priceRow:     { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  priceInput:   { width: 90, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 8, fontSize: 16, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  euroSign:     { fontSize: 16, color: '#6b7280', fontWeight: '600' },
+  updateBtn:    { flex: 1, backgroundColor: '#2563eb', borderRadius: 8, paddingVertical: 11, alignItems: 'center', justifyContent: 'center' },
+  updateBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+
   bigAction:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
   bigActionDanger: { borderTopColor: '#fee2e2' },
   bigActionTitle: { fontSize: 14, fontWeight: '600' },

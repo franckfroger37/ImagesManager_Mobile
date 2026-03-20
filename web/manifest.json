@@ -1,0 +1,25 @@
+{
+  "name": "Images Manager",
+  "short_name": "ImgManager",
+  "description": "Gestion photos bijoux & publication WooCommerce",
+  "start_url": "/ImagesManager_Mobile/",
+  "scope": "/ImagesManager_Mobile/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2563eb",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/ImagesManager_Mobile/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/ImagesManager_Mobile/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -21,8 +21,32 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Generate assets (icon, splash, favicon)
+        run: node generate-assets.js
+
       - name: Build
         run: npm run build
+
+      - name: Add PWA support
+        run: |
+          # Copier le manifest PWA
+          cp web/manifest.json dist/manifest.json
+
+          # Copier les icônes PWA directement à la racine du site (pas hashées)
+          cp assets/icon.png dist/icon-512.png
+
+          # Redimensionner en 192x192 avec ImageMagick (disponible sur ubuntu-latest)
+          convert assets/icon.png -resize 192x192 dist/icon-192.png 2>/dev/null \
+            || cp assets/icon.png dist/icon-192.png
+
+          # Copier le favicon
+          cp assets/favicon.png dist/favicon.png 2>/dev/null || true
+
+          # Injecter les balises PWA dans index.html
+          sed -i 's|</head>|  <link rel="manifest" href="/ImagesManager_Mobile/manifest.json">\n  <meta name="theme-color" content="#2563eb">\n  <meta name="mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n  <meta name="apple-mobile-web-app-title" content="Images Manager">\n  <link rel="apple-touch-icon" href="/ImagesManager_Mobile/icon-512.png">\n  <link rel="icon" type="image/png" href="/ImagesManager_Mobile/favicon.png">\n</head>|' dist/index.html
+
+          echo "PWA files added:"
+          ls -lh dist/manifest.json dist/icon-*.png dist/favicon.png
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
