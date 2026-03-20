@@ -21,32 +21,144 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Generate assets (icon, splash, favicon)
-        run: node generate-assets.js
+      - name: Generate assets (Python + Pillow, fiable sur ubuntu-latest)
+        run: |
+          pip3 install Pillow --break-system-packages -q
+          python3 - <<'PYEOF'
+          from PIL import Image, ImageDraw
+          import os
+
+          os.makedirs("assets", exist_ok=True)
+          BLUE = (37, 99, 235)
+
+          def camera(draw, cx, cy, size):
+              bw, bh = int(size*0.62), int(size*0.20)
+              draw.rectangle([cx-bw//2, cy-bh//2, cx+bw//2, cy+bh//2], fill="white")
+              r = int(size*0.085); draw.ellipse([cx-r,cy-r,cx+r,cy+r], fill=BLUE)
+              r = int(size*0.060); draw.ellipse([cx-r,cy-r,cx+r,cy+r], fill="white")
+              r = int(size*0.035); draw.ellipse([cx-r,cy-r,cx+r,cy+r], fill=BLUE)
+              draw.rectangle([cx-int(size*0.09),cy-int(size*0.15),cx+int(size*0.04),cy-int(size*0.09)], fill="white")
+
+          # icon.png 1024x1024
+          img = Image.new("RGB", (1024,1024), BLUE)
+          d = ImageDraw.Draw(img)
+          camera(d, 512, 480, 1024)
+          try:
+              from PIL import ImageFont
+              f = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 72)
+              d.text((512, 760), "Images Manager", font=f, fill="white", anchor="mm")
+          except: pass
+          img.save("assets/icon.png")
+          img.save("assets/adaptive-icon.png")
+          print("icon.png OK")
+
+          # splash.png 1242x2436
+          img2 = Image.new("RGB", (1242,2436), BLUE)
+          d2 = ImageDraw.Draw(img2)
+          camera(d2, 621, 960, 1100)
+          try:
+              from PIL import ImageFont
+              f2 = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 100)
+              f3 = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 56)
+              d2.text((621,1180), "Images Manager", font=f2, fill="white", anchor="mm")
+              d2.text((621,1280), "Gestion bijoux & WooCommerce", font=f3, fill=(180,210,255), anchor="mm")
+          except: pass
+          img2.save("assets/splash.png")
+          print("splash.png OK")
+
+          # favicon.png 64x64
+          img3 = Image.new("RGB", (64,64), BLUE)
+          img3.save("assets/favicon.png")
+
+          # icon-512.png et icon-192.png pour PWA (dans assets/)
+          img.save("assets/icon-512.png")
+          img.resize((192,192), Image.LANCZOS).save("assets/icon-192.png")
+          print("Tous les assets generés")
+          PYEOF
 
       - name: Build
         run: npm run build
 
-      - name: Add PWA support
+      - name: Add PWA + splash screen
         run: |
-          # Copier le manifest PWA
+          # ── Copier les icônes PWA à la racine du site ──
+          cp assets/icon-512.png dist/icon-512.png
+          cp assets/icon-192.png dist/icon-192.png
+          cp assets/favicon.png  dist/favicon.png
+
+          # ── Copier le manifest ──
           cp web/manifest.json dist/manifest.json
 
-          # Copier les icônes PWA directement à la racine du site (pas hashées)
-          cp assets/icon.png dist/icon-512.png
+          # ── Service Worker minimal (pour install Android) ──
+          cat > dist/sw.js << 'SWEOF'
+          const CACHE = 'images-manager-v1';
+          self.addEventListener('install', e => self.skipWaiting());
+          self.addEventListener('activate', e => self.clients.claim());
+          self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
+          SWEOF
 
-          # Redimensionner en 192x192 avec ImageMagick (disponible sur ubuntu-latest)
-          convert assets/icon.png -resize 192x192 dist/icon-192.png 2>/dev/null \
-            || cp assets/icon.png dist/icon-192.png
+          # ── Patch index.html : PWA meta + splash CSS + SW registration ──
+          python3 - <<'PYEOF'
+          with open("dist/index.html", "r") as f:
+              html = f.read()
 
-          # Copier le favicon
-          cp assets/favicon.png dist/favicon.png 2>/dev/null || true
+          pwa_head = """
+            <link rel="manifest" href="/ImagesManager_Mobile/manifest.json">
+            <meta name="theme-color" content="#2563eb">
+            <meta name="mobile-web-app-capable" content="yes">
+            <meta name="apple-mobile-web-app-capable" content="yes">
+            <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+            <meta name="apple-mobile-web-app-title" content="Images Manager">
+            <link rel="apple-touch-icon" href="/ImagesManager_Mobile/icon-512.png">
+            <link rel="icon" type="image/png" href="/ImagesManager_Mobile/favicon.png">
+            <style>
+              #im-splash {
+                position:fixed; inset:0; background:#2563eb;
+                display:flex; flex-direction:column;
+                align-items:center; justify-content:center; z-index:99999;
+                font-family:Arial,sans-serif;
+              }
+              #im-splash svg { margin-bottom:20px; }
+              #im-splash .t1 { color:#fff; font-size:26px; font-weight:700; margin:0; }
+              #im-splash .t2 { color:rgba(255,255,255,.65); font-size:13px; margin:6px 0 0; }
+            </style>
+          """
 
-          # Injecter les balises PWA dans index.html
-          sed -i 's|</head>|  <link rel="manifest" href="/ImagesManager_Mobile/manifest.json">\n  <meta name="theme-color" content="#2563eb">\n  <meta name="mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n  <meta name="apple-mobile-web-app-title" content="Images Manager">\n  <link rel="apple-touch-icon" href="/ImagesManager_Mobile/icon-512.png">\n  <link rel="icon" type="image/png" href="/ImagesManager_Mobile/favicon.png">\n</head>|' dist/index.html
+          splash_body = """
+            <div id="im-splash">
+              <svg width="90" height="90" viewBox="0 0 90 90">
+                <rect width="90" height="90" rx="14" fill="rgba(255,255,255,.18)"/>
+                <rect x="11" y="27" width="68" height="42" rx="7" fill="white"/>
+                <circle cx="45" cy="48" r="13" fill="#2563eb"/>
+                <circle cx="45" cy="48" r="9" fill="white"/>
+                <circle cx="45" cy="48" r="5" fill="#2563eb"/>
+                <rect x="28" y="17" width="20" height="12" rx="4" fill="white"/>
+              </svg>
+              <p class="t1">Images Manager</p>
+              <p class="t2">Bijoux &amp; WooCommerce</p>
+            </div>
+            <script>
+              document.addEventListener('DOMContentLoaded',function(){
+                var s=document.getElementById('im-splash');
+                if(s){setTimeout(function(){s.style.transition='opacity .4s';s.style.opacity='0';setTimeout(function(){s.remove();},450);},1800);}
+              });
+              if('serviceWorker' in navigator){
+                window.addEventListener('load',function(){
+                  navigator.serviceWorker.register('/ImagesManager_Mobile/sw.js');
+                });
+              }
+            </script>
+          """
 
-          echo "PWA files added:"
-          ls -lh dist/manifest.json dist/icon-*.png dist/favicon.png
+          html = html.replace("</head>", pwa_head + "\n  </head>")
+          html = html.replace("<div id=\"root\">", "<div id=\"root\">" + splash_body)
+          with open("dist/index.html", "w") as f:
+              f.write(html)
+          print("index.html patched OK")
+          PYEOF
+
+          echo "PWA files:"
+          ls -lh dist/manifest.json dist/sw.js dist/icon-*.png dist/favicon.png
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
