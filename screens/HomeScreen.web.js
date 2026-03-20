@@ -84,6 +84,16 @@ export default function HomeScreen({ navigation }) {
         </View>
       )}
 
+      {/* Bouton Gérer les produits */}
+      <TouchableOpacity
+        style={styles.manageBtn}
+        onPress={() => navigation.navigate('ManageProducts')}
+      >
+        <Ionicons name="cube-outline" size={20} color="#7c3aed" />
+        <Text style={styles.manageBtnText}>📦 Gérer les produits publiés</Text>
+        <Ionicons name="chevron-forward" size={18} color="#7c3aed" />
+      </TouchableOpacity>
+
       <View style={styles.instructions}>
         <Ionicons name="information-circle-outline" size={20} color="#6b7280" />
         <Text style={styles.instructionsText}>
@@ -95,9 +105,9 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.steps}>
         <Text style={styles.stepsTitle}>Workflow</Text>
         {[
-          { icon: 'camera-outline', label: '① Choisir la photo' },
-          { icon: 'crop-outline', label: '② Recadrer le bijou' },
-          { icon: 'pricetag-outline', label: '③ Définir le prix & catégorie' },
+          { icon: 'camera-outline',       label: '① Choisir la photo' },
+          { icon: 'crop-outline',         label: '② Recadrer le bijou' },
+          { icon: 'pricetag-outline',     label: '③ Définir le prix & catégorie' },
           { icon: 'cloud-upload-outline', label: '④ Publier sur WooCommerce' },
         ].map((step, i) => (
           <View key={i} style={styles.stepRow}>
@@ -117,21 +127,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
   },
-  headerTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
-  settingsBtn: { padding: 4 },
-  actionRow: { flexDirection: 'row', padding: 16, gap: 12 },
+  headerTitle:  { fontSize: 16, fontWeight: '600', color: '#111827' },
+  settingsBtn:  { padding: 4 },
+  actionRow:    { flexDirection: 'row', padding: 16, gap: 12 },
   actionBtn: {
     flex: 1, backgroundColor: '#2563eb', borderRadius: 12,
     paddingVertical: 20, alignItems: 'center', justifyContent: 'center', gap: 8,
     cursor: 'pointer',
   },
-  actionBtnSecondary: {
-    backgroundColor: '#fff', borderWidth: 2, borderColor: '#2563eb',
-  },
-  actionBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  actionBtnSecondary:     { backgroundColor: '#fff', borderWidth: 2, borderColor: '#2563eb' },
+  actionBtnText:          { color: '#fff', fontSize: 14, fontWeight: '600' },
   actionBtnSecondaryText: { color: '#2563eb' },
   loadingContainer: { alignItems: 'center', padding: 20 },
-  loadingText: { marginTop: 8, color: '#6b7280' },
+  loadingText:      { marginTop: 8, color: '#6b7280' },
+  manageBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginHorizontal: 16, marginBottom: 12,
+    backgroundColor: '#f5f3ff', borderRadius: 12,
+    paddingVertical: 14, paddingHorizontal: 16,
+    borderWidth: 1, borderColor: '#ddd6fe',
+  },
+  manageBtnText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#7c3aed' },
   instructions: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     marginHorizontal: 16, padding: 12,
@@ -139,9 +155,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3, borderLeftColor: '#2563eb',
   },
   instructionsText: { flex: 1, fontSize: 13, color: '#374151', lineHeight: 20 },
-  steps: {
-    margin: 16, padding: 16, backgroundColor: '#fff', borderRadius: 12,
-  },
+  steps: { margin: 16, padding: 16, backgroundColor: '#fff', borderRadius: 12 },
   stepsTitle: {
     fontSize: 14, fontWeight: '700', color: '#374151', marginBottom: 12,
     textTransform: 'uppercase', letterSpacing: 0.5,

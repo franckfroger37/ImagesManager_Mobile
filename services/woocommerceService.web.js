@@ -225,3 +225,41 @@ export const deleteProduct = async (productId, settings) => {
   }
   return true;
 };
+
+// ── Liste des produits récents ─────────────────────────────────────────────────
+// Retourne les N derniers produits (publiés + brouillons)
+export const fetchRecentProducts = async (settings, perPage = 30) => {
+  const { wooUrl, consumerKey, consumerSecret } = settings;
+  if (!wooUrl || !consumerKey || !consumerSecret) return [];
+  const resp = await fetch(
+    `${wooUrl}/wp-json/wc/v3/products?per_page=${perPage}&orderby=date&order=desc&status=any&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`
+  );
+  if (!resp.ok) throw new Error(`Erreur ${resp.status}`);
+  const products = await resp.json();
+  return products.map((p) => ({
+    id:        p.id,
+    name:      p.name,
+    price:     p.regular_price || p.price || '0',
+    status:    p.status, // 'publish' | 'draft' | 'pending' ...
+    thumbnail: p.images?.[0]?.src || null,
+    permalink: p.permalink,
+  }));
+};
+
+// ── Republier un produit (draft → publish) ─────────────────────────────────────
+export const republishProduct = async (productId, settings) => {
+  const { wooUrl, consumerKey, consumerSecret } = settings;
+  const response = await fetch(
+    `${wooUrl}/wp-json/wc/v3/products/${productId}?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'publish' }),
+    }
+  );
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || `Erreur ${response.status}`);
+  }
+  return true;
+};

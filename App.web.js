@@ -10,10 +10,11 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import * as Font from 'expo-font';
 
-import HomeScreen     from './screens/HomeScreen';
-import CropScreen     from './screens/CropScreen';
-import PublishScreen  from './screens/PublishScreen';
-import SettingsScreen from './screens/SettingsScreen';
+import HomeScreen           from './screens/HomeScreen';
+import CropScreen           from './screens/CropScreen';
+import PublishScreen        from './screens/PublishScreen';
+import SettingsScreen       from './screens/SettingsScreen';
+import ManageProductsScreen from './screens/ManageProductsScreen';
 
 const Stack = createStackNavigator();
 
@@ -64,6 +65,11 @@ export default function App() {
             name="Settings"
             component={SettingsScreen}
             options={{ title: '⚙️ Paramètres' }}
+          />
+          <Stack.Screen
+            name="ManageProducts"
+            component={ManageProductsScreen}
+            options={{ title: '📦 Gérer les produits' }}
           />
         </Stack.Navigator>
       </NavigationContainer>
