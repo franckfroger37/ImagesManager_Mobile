@@ -1,14 +1,14 @@
 /**
  * App.web.js - Version web
- * Précharge la police Ionicons avant d'afficher l'app (sinon icônes vides)
+ * Charge la police Ionicons depuis unpkg CDN (URL directe, fiable)
+ * car le require() local du TTF n'est pas toujours exporté dans dist/assets/
  */
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
-import { useFonts } from 'expo-font';
-import { Ionicons } from '@expo/vector-icons';
+import * as Font from 'expo-font';
 
 import HomeScreen     from './screens/HomeScreen';
 import CropScreen     from './screens/CropScreen';
@@ -17,9 +17,12 @@ import SettingsScreen from './screens/SettingsScreen';
 
 const Stack = createStackNavigator();
 
+// URL directe vers le TTF Ionicons — même fichier que @expo/vector-icons@14.0.2
+const IONICONS_CDN =
+  'https://unpkg.com/@expo/vector-icons@14.0.2/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf';
+
 export default function App() {
-  // Précharge la police des icônes Ionicons — sans ça les icônes restent vides sur web
-  const [fontsLoaded] = useFonts(Ionicons.font);
+  const [fontsLoaded] = Font.useFonts({ Ionicons: IONICONS_CDN });
 
   if (!fontsLoaded) {
     return (
@@ -35,12 +38,10 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator
           screenOptions={{
-            headerStyle:      { backgroundColor: '#2563eb' },
-            headerTintColor:  '#fff',
-            headerTitleStyle: { fontWeight: '700', fontSize: 18 },
+            headerStyle:            { backgroundColor: '#2563eb' },
+            headerTintColor:        '#fff',
+            headerTitleStyle:       { fontWeight: '700', fontSize: 18 },
             headerBackTitleVisible: false,
-            // overflow:'hidden' + flex:1 = indispensable pour que
-            // ScrollView fonctionne à l'intérieur des écrans sur web
             cardStyle: { backgroundColor: '#f8fafc', flex: 1, overflow: 'hidden' },
           }}
         >

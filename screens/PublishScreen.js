@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, Image, ActivityIndicator, SafeAreaView, Modal,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { getSettings, CATEGORIES } from '../services/storageService';
 import { processImage, generateRefName, getFileSize } from '../services/imageService';
@@ -16,19 +17,22 @@ export default function PublishScreen({ route, navigation }) {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
-  const [progressType, setProgressType] = useState('info'); // 'info' | 'error' | 'success'
+  const [progressType, setProgressType] = useState('info');
   const [settings, setSettings] = useState(null);
   const [refName] = useState(() => generateRefName(fileName));
   const [done, setDone] = useState(false);
-  const [doneProductId, setDoneProductId] = useState(null);
 
-  useEffect(() => {
-    getSettings().then((s) => {
-      setSettings(s);
-      const defaultCat = CATEGORIES.find((c) => c.value === s.defaultCategory) || CATEGORIES[0];
-      setSelectedCategory(defaultCat);
-    });
-  }, []);
+  // useFocusEffect = se relance à chaque fois que l'écran est affiché,
+  // y compris quand on revient depuis l'écran Paramètres
+  useFocusEffect(
+    useCallback(() => {
+      getSettings().then((s) => {
+        setSettings(s);
+        const defaultCat = CATEGORIES.find((c) => c.value === s.defaultCategory) || CATEGORIES[0];
+        setSelectedCategory(defaultCat);
+      });
+    }, [])
+  );
 
   const settingsOk = settings?.wooUrl && settings?.consumerKey && settings?.consumerSecret;
 
@@ -38,7 +42,6 @@ export default function PublishScreen({ route, navigation }) {
   };
 
   const handlePublish = async () => {
-    // Validation in-screen (pas d'Alert.alert sur web)
     if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
       setMsg('⚠️ Veuillez saisir un prix valide avant de publier.', 'error');
       return;
@@ -53,9 +56,9 @@ export default function PublishScreen({ route, navigation }) {
     try {
       setMsg('⚙️ Traitement de l\'image en cours...', 'info');
       const processedUri = await processImage(uri, cropParams, {
-        targetWidth: settings.targetWidth || 800,
+        targetWidth:  settings.targetWidth  || 800,
         targetHeight: settings.targetHeight || 1200,
-        quality: settings.targetQuality || 85,
+        quality:      settings.targetQuality || 85,
       });
 
       const sizKb = await getFileSize(processedUri);
@@ -66,7 +69,7 @@ export default function PublishScreen({ route, navigation }) {
         refName,
         price: parseFloat(price),
         description: '',
-        categorySlug: selectedCategory.value,
+        categorySlug:  selectedCategory.value,
         categoryLabel: selectedCategory.label,
         settings,
         onProgress: (msg) => setMsg(msg, 'info'),
@@ -74,21 +77,18 @@ export default function PublishScreen({ route, navigation }) {
 
       setProcessing(false);
       setDone(true);
-      setDoneProductId(result?.id);
       setMsg(`✅ Produit "${refName}" publié avec succès !`, 'success');
     } catch (error) {
       setProcessing(false);
-      const msg = error.message || 'Une erreur est survenue.';
-      setMsg(`❌ Erreur : ${msg}`, 'error');
+      setMsg(`❌ Erreur : ${error.message || 'Une erreur est survenue.'}`, 'error');
     }
   };
 
-  const progressColors = {
+  const pc = {
     info:    { bg: '#f0fdf4', border: '#16a34a', text: '#15803d' },
     error:   { bg: '#fff1f2', border: '#e11d48', text: '#be123c' },
     success: { bg: '#f0fdf4', border: '#16a34a', text: '#15803d' },
-  };
-  const pc = progressColors[progressType] || progressColors.info;
+  }[progressType] || { bg: '#f0fdf4', border: '#16a34a', text: '#15803d' };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -102,27 +102,16 @@ export default function PublishScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* Bannière avertissement si paramètres manquants */}
+        {/* Bannière si paramètres manquants */}
         {settings && !settingsOk && (
           <TouchableOpacity style={styles.warningBanner} onPress={() => navigation.navigate('Settings')}>
             <Ionicons name="warning-outline" size={18} color="#92400e" />
             <Text style={styles.warningText}>
-              Paramètres WooCommerce non configurés — Tapez ici pour les saisir
+              Paramètres WooCommerce non configurés — tapez ici pour les saisir
             </Text>
             <Ionicons name="chevron-forward" size={16} color="#92400e" />
           </TouchableOpacity>
         )}
-
-        <View style={styles.stepsBar}>
-          {['Recadrage', 'Paramètres', 'Publication'].map((step, i) => (
-            <View key={i} style={styles.stepItem}>
-              <View style={[styles.stepDot, i <= 1 && styles.stepDotActive]}>
-                <Text style={styles.stepDotText}>{i + 1}</Text>
-              </View>
-              <Text style={[styles.stepLabel, i <= 1 && styles.stepLabelActive]}>{step}</Text>
-            </View>
-          ))}
-        </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>💰 Prix de vente (€)</Text>
@@ -146,7 +135,7 @@ export default function PublishScreen({ route, navigation }) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>📐 Paramètres d'image</Text>
+          <Text style={styles.sectionLabel}>📐 Paramètres image</Text>
           <View style={styles.infoRow}>
             <Ionicons name="resize-outline" size={16} color="#6b7280" />
             <Text style={styles.infoText}>{settings?.targetWidth || 800} × {settings?.targetHeight || 1200} px</Text>
@@ -155,14 +144,12 @@ export default function PublishScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* Zone de progression / erreurs — toujours visible si message */}
         {progressMsg ? (
           <View style={[styles.progressBox, { backgroundColor: pc.bg, borderLeftColor: pc.border }]}>
             <Text style={[styles.progressText, { color: pc.text }]}>{progressMsg}</Text>
           </View>
         ) : null}
 
-        {/* Bouton succès → retour accueil */}
         {done ? (
           <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.navigate('Home')}>
             <Ionicons name="home-outline" size={22} color="#fff" />
@@ -219,43 +206,36 @@ export default function PublishScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  scroll: { padding: 16, paddingBottom: 40 },
-  previewCard: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', marginBottom: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
-  preview: { width: 80, height: 80 },
-  previewInfo: { flex: 1, padding: 12, justifyContent: 'center' },
-  refName: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  refSub: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  warningBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fbbf24', borderRadius: 10, padding: 12, marginBottom: 12 },
-  warningText: { flex: 1, fontSize: 13, color: '#92400e', fontWeight: '500' },
-  stepsBar: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginBottom: 20 },
-  stepItem: { alignItems: 'center', gap: 4 },
-  stepDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' },
-  stepDotActive: { backgroundColor: '#2563eb' },
-  stepDotText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  stepLabel: { fontSize: 11, color: '#9ca3af' },
-  stepLabelActive: { color: '#2563eb', fontWeight: '600' },
-  section: { marginBottom: 16 },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.3 },
-  priceInput: { backgroundColor: '#fff', borderRadius: 10, borderWidth: 2, borderColor: '#2563eb', padding: 14, fontSize: 28, fontWeight: '700', color: '#111827', textAlign: 'center' },
-  categorySelector: { backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb', padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  container:      { flex: 1, backgroundColor: '#f8fafc' },
+  scroll:         { padding: 16, paddingBottom: 40 },
+  previewCard:    { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', marginBottom: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
+  preview:        { width: 80, height: 80 },
+  previewInfo:    { flex: 1, padding: 12, justifyContent: 'center' },
+  refName:        { fontSize: 16, fontWeight: '700', color: '#111827' },
+  refSub:         { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  warningBanner:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fbbf24', borderRadius: 10, padding: 12, marginBottom: 12 },
+  warningText:    { flex: 1, fontSize: 13, color: '#92400e', fontWeight: '500' },
+  section:        { marginBottom: 16 },
+  sectionLabel:   { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.3 },
+  priceInput:     { backgroundColor: '#fff', borderRadius: 10, borderWidth: 2, borderColor: '#2563eb', padding: 14, fontSize: 28, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  categorySelector:     { backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb', padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   categorySelectorText: { fontSize: 16, color: '#111827', fontWeight: '500' },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb' },
-  infoText: { fontSize: 14, color: '#374151' },
-  progressBox: { borderLeftWidth: 3, borderRadius: 8, padding: 12, marginBottom: 16 },
-  progressText: { fontSize: 13, fontFamily: 'monospace' },
-  publishBtn: { backgroundColor: '#16a34a', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, elevation: 3, shadowColor: '#16a34a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 },
+  infoRow:        { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb' },
+  infoText:       { fontSize: 14, color: '#374151' },
+  progressBox:    { borderLeftWidth: 3, borderRadius: 8, padding: 12, marginBottom: 16 },
+  progressText:   { fontSize: 13 },
+  publishBtn:     { backgroundColor: '#16a34a', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, elevation: 3, shadowColor: '#16a34a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 },
   publishBtnDisabled: { backgroundColor: '#86efac', elevation: 0 },
   publishBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  doneBtn: { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
-  backBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, marginTop: 8 },
-  backBtnText: { color: '#6b7280', fontSize: 14 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 34 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  catOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  catOptionSelected: { backgroundColor: '#eff6ff' },
-  catOptionText: { fontSize: 16, color: '#374151' },
+  doneBtn:        { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  backBtn:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, marginTop: 8 },
+  backBtnText:    { color: '#6b7280', fontSize: 14 },
+  modalOverlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalSheet:     { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 34 },
+  modalHeader:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
+  modalTitle:     { fontSize: 18, fontWeight: '700', color: '#111827' },
+  catOption:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  catOptionSelected:     { backgroundColor: '#eff6ff' },
+  catOptionText:         { fontSize: 16, color: '#374151' },
   catOptionTextSelected: { color: '#2563eb', fontWeight: '600' },
 });
