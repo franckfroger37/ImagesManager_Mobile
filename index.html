@@ -38,6 +38,7 @@
       display:flex;flex-direction:column;
       align-items:center;justify-content:center;z-index:99999;
       font-family:Arial,Helvetica,sans-serif;
+      transition:opacity .4s;
     }
     #im-splash svg{margin-bottom:18px;}
     #im-splash .t1{color:#fff;font-size:26px;font-weight:700;margin:0;}
@@ -52,7 +53,7 @@
       You need to enable JavaScript to run this app.
     </noscript>
     <!-- The root element for your Expo app. -->
-    <div id="root">
+    
 <div id="im-splash">
   <svg width="88" height="88" viewBox="0 0 88 88" fill="none">
     <rect width="88" height="88" rx="14" fill="rgba(255,255,255,.18)"/>
@@ -66,21 +67,25 @@
   <p class="t2">Bijoux &amp; WooCommerce</p>
 </div>
 <script>
-  document.addEventListener('DOMContentLoaded',function(){
-    var s=document.getElementById('im-splash');
-    if(s){setTimeout(function(){
-      s.style.transition='opacity .4s';
-      s.style.opacity='0';
-      setTimeout(function(){s.remove();},450);
-    },1800);}
+  // Masque le splash après 1.8s (une fois le JS chargé)
+  window.addEventListener('load', function() {
+    var s = document.getElementById('im-splash');
+    if (s) {
+      setTimeout(function() {
+        s.style.opacity = '0';
+        setTimeout(function() { s.remove(); }, 450);
+      }, 1800);
+    }
   });
-  if('serviceWorker' in navigator){
-    window.addEventListener('load',function(){
+  // Enregistrement du service worker (PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
       navigator.serviceWorker.register('/ImagesManager_Mobile/sw.js');
     });
   }
 </script>
-</div>
+
+    <div id="root"></div>
   <script src="/ImagesManager_Mobile/_expo/static/js/web/index-8d9f029e6c6c1559fee15f7834c43f66.js" defer></script>
 </body>
 </html>
