@@ -1,17 +1,48 @@
 // Version WEB de HomeScreen — utilise <input type="file"> au lieu d'expo-image-picker
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen({ navigation }) {
-  const fileInputRef = useRef(null);
+  const fileInputRef   = useRef(null);
   const cameraInputRef = useRef(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]             = useState(false);
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [installed, setInstalled]         = useState(false);
+
+  // Écoute l'événement beforeinstallprompt de Chrome
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handler = (e) => {
+      e.preventDefault();          // Empêche la mini-barre Chrome automatique
+      setInstallPrompt(e);         // Stocke l'événement pour l'utiliser plus tard
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    // Détecte si l'app est déjà installée
+    window.addEventListener('appinstalled', () => {
+      setInstalled(true);
+      setInstallPrompt(null);
+    });
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setInstalled(true);
+    }
+    setInstallPrompt(null);
+  };
 
   const handleFile = (file) => {
     if (!file) return;
     setLoading(true);
-
     const reader = new FileReader();
     reader.onload = (e) => {
       const uri = e.target.result;
@@ -32,7 +63,7 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Input caché pour la galerie */}
+      {/* Inputs cachés */}
       <input
         ref={fileInputRef}
         type="file"
@@ -40,7 +71,6 @@ export default function HomeScreen({ navigation }) {
         style={{ display: 'none' }}
         onChange={(e) => handleFile(e.target.files[0])}
       />
-      {/* Input caché pour la caméra */}
       <input
         ref={cameraInputRef}
         type="file"
@@ -56,6 +86,22 @@ export default function HomeScreen({ navigation }) {
           <Ionicons name="settings-outline" size={24} color="#2563eb" />
         </TouchableOpacity>
       </View>
+
+      {/* Bannière d'installation PWA — visible uniquement quand Chrome est prêt */}
+      {installPrompt && !installed && (
+        <TouchableOpacity style={styles.installBanner} onPress={handleInstall}>
+          <Ionicons name="download-outline" size={20} color="#fff" />
+          <Text style={styles.installBannerText}>📲 Installer l'app sur cet écran</Text>
+          <Ionicons name="chevron-forward" size={18} color="#fff" />
+        </TouchableOpacity>
+      )}
+
+      {installed && (
+        <View style={styles.installedBanner}>
+          <Ionicons name="checkmark-circle" size={18} color="#16a34a" />
+          <Text style={styles.installedText}>Application installée ✓</Text>
+        </View>
+      )}
 
       <View style={styles.actionRow}>
         <TouchableOpacity
@@ -84,7 +130,6 @@ export default function HomeScreen({ navigation }) {
         </View>
       )}
 
-      {/* Bouton Gérer les produits */}
       <TouchableOpacity
         style={styles.manageBtn}
         onPress={() => navigation.navigate('ManageProducts')}
@@ -121,15 +166,34 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container:    { flex: 1, backgroundColor: '#f8fafc' },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
     backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
   },
-  headerTitle:  { fontSize: 16, fontWeight: '600', color: '#111827' },
-  settingsBtn:  { padding: 4 },
-  actionRow:    { flexDirection: 'row', padding: 16, gap: 12 },
+  headerTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
+  settingsBtn: { padding: 4 },
+
+  // Bannière d'installation
+  installBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginHorizontal: 16, marginTop: 12,
+    backgroundColor: '#2563eb', borderRadius: 12,
+    paddingVertical: 14, paddingHorizontal: 16,
+    cursor: 'pointer',
+  },
+  installBannerText: { flex: 1, fontSize: 14, fontWeight: '700', color: '#fff' },
+  installedBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    marginHorizontal: 16, marginTop: 12,
+    backgroundColor: '#dcfce7', borderRadius: 12,
+    paddingVertical: 10, paddingHorizontal: 16,
+    borderWidth: 1, borderColor: '#86efac',
+  },
+  installedText: { fontSize: 14, fontWeight: '600', color: '#16a34a' },
+
+  actionRow:            { flexDirection: 'row', padding: 16, gap: 12 },
   actionBtn: {
     flex: 1, backgroundColor: '#2563eb', borderRadius: 12,
     paddingVertical: 20, alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -140,6 +204,7 @@ const styles = StyleSheet.create({
   actionBtnSecondaryText: { color: '#2563eb' },
   loadingContainer: { alignItems: 'center', padding: 20 },
   loadingText:      { marginTop: 8, color: '#6b7280' },
+
   manageBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     marginHorizontal: 16, marginBottom: 12,
@@ -148,6 +213,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#ddd6fe',
   },
   manageBtnText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#7c3aed' },
+
   instructions: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     marginHorizontal: 16, padding: 12,
@@ -155,7 +221,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3, borderLeftColor: '#2563eb',
   },
   instructionsText: { flex: 1, fontSize: 13, color: '#374151', lineHeight: 20 },
-  steps: { margin: 16, padding: 16, backgroundColor: '#fff', borderRadius: 12 },
+
+  steps:      { margin: 16, padding: 16, backgroundColor: '#fff', borderRadius: 12 },
   stepsTitle: {
     fontSize: 14, fontWeight: '700', color: '#374151', marginBottom: 12,
     textTransform: 'uppercase', letterSpacing: 0.5,
