@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Install Pillow (génération des images)
+      - name: Install Pillow (generation des icones)
         run: pip3 install Pillow --break-system-packages -q
 
       - name: Generate assets (icon, splash, favicon)
@@ -37,11 +37,24 @@ jobs:
           cp assets/favicon.png  dist/favicon.png
           cp web/manifest.json   dist/manifest.json
           cp web/sw.js           dist/sw.js
-          echo "PWA files copied:"
+          echo "Fichiers PWA copiés :"
           ls -lh dist/manifest.json dist/sw.js dist/icon-*.png dist/favicon.png
 
-      - name: Patch index.html (PWA + splash screen)
-        run: python3 scripts/patch-html.py
+      - name: Verify PWA tags in index.html
+        run: |
+          echo "=== Contenu index.html ==="
+          cat dist/index.html
+          echo ""
+          if grep -q 'manifest.json' dist/index.html; then
+            echo "OK : manifest.json trouvé dans index.html"
+          else
+            echo "AVERTISSEMENT : manifest.json absent de index.html"
+          fi
+          if grep -q 'im-splash' dist/index.html; then
+            echo "OK : splash screen trouvé dans index.html"
+          else
+            echo "AVERTISSEMENT : splash screen absent de index.html"
+          fi
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

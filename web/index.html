@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Images Manager</title>
+
+    <!-- PWA : manifest et icônes -->
+    <link rel="manifest" href="/ImagesManager_Mobile/manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Images Manager" />
+    <link rel="apple-touch-icon" href="/ImagesManager_Mobile/icon-512.png" />
+    <link rel="icon" type="image/png" href="/ImagesManager_Mobile/favicon.png" />
+
+    <!-- react-native-web reset -->
+    <style id="expo-reset">
+      html, body { height: 100%; }
+      body { overflow: hidden; }
+      #root { display: flex; height: 100%; flex: 1; }
+    </style>
+
+    <!-- Splash screen : visible pendant le chargement JS -->
+    <style>
+      #im-splash {
+        position: fixed;
+        inset: 0;
+        background: #2563eb;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+        font-family: Arial, Helvetica, sans-serif;
+        transition: opacity 0.4s ease;
+      }
+      #im-splash svg { margin-bottom: 18px; }
+      #im-splash .t1 { color: #fff; font-size: 26px; font-weight: 700; margin: 0; }
+      #im-splash .t2 { color: rgba(255,255,255,0.6); font-size: 13px; margin: 6px 0 0; }
+    </style>
+  </head>
+
+  <body>
+    <noscript>Activez JavaScript pour utiliser cette application.</noscript>
+
+    <!-- Splash screen (sibling de #root, React ne le touche pas) -->
+    <div id="im-splash">
+      <svg width="88" height="88" viewBox="0 0 88 88" fill="none">
+        <rect width="88" height="88" rx="14" fill="rgba(255,255,255,0.18)"/>
+        <rect x="10" y="26" width="68" height="42" rx="7" fill="white"/>
+        <circle cx="44" cy="47" r="13" fill="#2563eb"/>
+        <circle cx="44" cy="47" r="9" fill="white"/>
+        <circle cx="44" cy="47" r="5" fill="#2563eb"/>
+        <rect x="27" y="16" width="20" height="12" rx="4" fill="white"/>
+      </svg>
+      <p class="t1">Images Manager</p>
+      <p class="t2">Bijoux &amp; WooCommerce</p>
+    </div>
+
+    <!-- Racine React -->
+    <div id="root"></div>
+
+    <!-- Disparition du splash + enregistrement service worker -->
+    <script>
+      window.addEventListener('load', function () {
+        // Masque le splash après 1.8s
+        var s = document.getElementById('im-splash');
+        if (s) {
+          setTimeout(function () {
+            s.style.opacity = '0';
+            setTimeout(function () { s.remove(); }, 450);
+          }, 1800);
+        }
+        // Service Worker pour PWA installable
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker
+            .register('/ImagesManager_Mobile/sw.js')
+            .then(function () { console.log('SW enregistré'); })
+            .catch(function (e) { console.warn('SW erreur:', e); });
+        }
+      });
+    </script>
+  </body>
+</html>
