@@ -3,8 +3,10 @@ Patche dist/index.html pour ajouter :
   - Les balises PWA (manifest, theme-color, apple-touch-icon...)
   - Un splash screen CSS "Images Manager" affiché pendant le chargement JS
   - L'enregistrement du service worker
+
+NOTE : le splash est injecté AVANT <div id="root">, en tant que
+sibling (pas enfant), pour que React ne l'écrase pas au montage.
 """
-import sys
 
 PWA_HEAD = """
   <link rel="manifest" href="/ImagesManager_Mobile/manifest.json">
@@ -21,6 +23,7 @@ PWA_HEAD = """
       display:flex;flex-direction:column;
       align-items:center;justify-content:center;z-index:99999;
       font-family:Arial,Helvetica,sans-serif;
+      transition:opacity .4s;
     }
     #im-splash svg{margin-bottom:18px;}
     #im-splash .t1{color:#fff;font-size:26px;font-weight:700;margin:0;}
@@ -28,7 +31,8 @@ PWA_HEAD = """
   </style>
 """
 
-SPLASH_BODY = """
+# Le splash est AVANT #root (sibling), pas à l'intérieur
+SPLASH_HTML = """
 <div id="im-splash">
   <svg width="88" height="88" viewBox="0 0 88 88" fill="none">
     <rect width="88" height="88" rx="14" fill="rgba(255,255,255,.18)"/>
@@ -42,16 +46,19 @@ SPLASH_BODY = """
   <p class="t2">Bijoux &amp; WooCommerce</p>
 </div>
 <script>
-  document.addEventListener('DOMContentLoaded',function(){
-    var s=document.getElementById('im-splash');
-    if(s){setTimeout(function(){
-      s.style.transition='opacity .4s';
-      s.style.opacity='0';
-      setTimeout(function(){s.remove();},450);
-    },1800);}
+  // Masque le splash après 1.8s (une fois le JS chargé)
+  window.addEventListener('load', function() {
+    var s = document.getElementById('im-splash');
+    if (s) {
+      setTimeout(function() {
+        s.style.opacity = '0';
+        setTimeout(function() { s.remove(); }, 450);
+      }, 1800);
+    }
   });
-  if('serviceWorker' in navigator){
-    window.addEventListener('load',function(){
+  // Enregistrement du service worker (PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
       navigator.serviceWorker.register('/ImagesManager_Mobile/sw.js');
     });
   }
@@ -61,10 +68,16 @@ SPLASH_BODY = """
 with open("dist/index.html", "r", encoding="utf-8") as f:
     html = f.read()
 
+# 1. Injecter les balises PWA dans <head>
 html = html.replace("</head>", PWA_HEAD + "\n</head>")
-html = html.replace('<div id="root"></div>', '<div id="root">' + SPLASH_BODY + '</div>')
+
+# 2. Injecter le splash AVANT <div id="root"> (sibling, pas enfant)
+html = html.replace('<div id="root"></div>', SPLASH_HTML + '\n    <div id="root"></div>')
 
 with open("dist/index.html", "w", encoding="utf-8") as f:
     f.write(html)
 
-print("index.html patché avec succès")
+print("index.html patche avec succes")
+print("  -> PWA head tags injectes")
+print("  -> splash screen injecte avant #root")
+print("  -> service worker enregistre")
