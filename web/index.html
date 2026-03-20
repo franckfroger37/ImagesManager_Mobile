@@ -16,14 +16,20 @@
     <link rel="apple-touch-icon" href="/ImagesManager_Mobile/icon-512.png" />
     <link rel="icon" type="image/png" href="/ImagesManager_Mobile/favicon.png" />
 
-    <!-- react-native-web reset -->
     <style id="expo-reset">
       html, body { height: 100%; }
-      body { overflow: hidden; }
-      #root { display: flex; height: 100%; flex: 1; }
+      /* overflow: visible sur body pour que Chrome puisse afficher sa barre d'adresse */
+      body { overflow: visible; }
+      #root {
+        display: flex;
+        flex: 1;
+        height: 100%;
+        /* Le scroll est géré dans #root, pas dans body */
+        overflow: hidden;
+      }
     </style>
 
-    <!-- Splash screen : visible pendant le chargement JS -->
+    <!-- Splash screen -->
     <style>
       #im-splash {
         position: fixed;
@@ -46,7 +52,7 @@
   <body>
     <noscript>Activez JavaScript pour utiliser cette application.</noscript>
 
-    <!-- Splash screen (sibling de #root, React ne le touche pas) -->
+    <!-- Splash screen (sibling de #root) -->
     <div id="im-splash">
       <svg width="88" height="88" viewBox="0 0 88 88" fill="none">
         <rect width="88" height="88" rx="14" fill="rgba(255,255,255,0.18)"/>
@@ -63,10 +69,8 @@
     <!-- Racine React -->
     <div id="root"></div>
 
-    <!-- Disparition du splash + enregistrement service worker -->
     <script>
       window.addEventListener('load', function () {
-        // Masque le splash après 1.8s
         var s = document.getElementById('im-splash');
         if (s) {
           setTimeout(function () {
@@ -74,7 +78,6 @@
             setTimeout(function () { s.remove(); }, 450);
           }, 1800);
         }
-        // Service Worker pour PWA installable
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker
             .register('/ImagesManager_Mobile/sw.js')
