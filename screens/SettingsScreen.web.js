@@ -2,17 +2,18 @@
 // - settings initialisés de façon SYNCHRONE via getSettingsSync()
 //   → pas de useEffect, pas de race condition, pas d'écrasement des saisies
 // - Alertes remplacées par messages in-screen
+// - Section debug pour diagnostiquer les problèmes de stockage
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, ActivityIndicator, SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getSettingsSync, saveSettings } from '../services/storageService';
+import { getSettingsSync, saveSettings, debugReadLocalStorage } from '../services/storageService';
 import { testWooConnection, testWpAuth } from '../services/woocommerceService';
 
 export default function SettingsScreen({ navigation }) {
-  // Initialisation synchrone — localStorage est lu immédiatement, sans async
+  // Initialisation synchrone — localStorage lu immédiatement, sans async
   const [settings, setSettings] = useState(() => getSettingsSync());
 
   const [saving,     setSaving]     = useState(false);
@@ -22,6 +23,7 @@ export default function SettingsScreen({ navigation }) {
   const [wooStatus,  setWooStatus]  = useState(null); // {ok, msg}
   const [wpStatus,   setWpStatus]   = useState(null);
   const [saveStatus, setSaveStatus] = useState(null);
+  const [debugInfo,  setDebugInfo]  = useState(null);
 
   const update = (key, value) => setSettings((prev) => ({ ...prev, [key]: value }));
 
@@ -56,6 +58,29 @@ export default function SettingsScreen({ navigation }) {
     } catch (e) {
       setWpStatus({ ok: false, msg: `❌ ${e.message}` });
     } finally { setTestingWp(false); }
+  };
+
+  const handleDebug = () => {
+    const fromStorage = debugReadLocalStorage();
+    const lines = [];
+    lines.push('=== Cache mémoire (actuel) ===');
+    lines.push(`wooUrl: "${settings.wooUrl || '(vide)'}"`);
+    lines.push(`consumerKey: "${settings.consumerKey ? '***' + settings.consumerKey.slice(-4) : '(vide)'}"`);
+    lines.push(`consumerSecret: "${settings.consumerSecret ? '***' + settings.consumerSecret.slice(-4) : '(vide)'}"`);
+    lines.push(`wpUsername: "${settings.wpUsername || '(vide)'}"`);
+    lines.push(`wpAppPassword: "${settings.wpAppPassword ? '(défini)' : '(vide)'}"`);
+    lines.push('');
+    lines.push('=== localStorage ===');
+    if (!fromStorage) {
+      lines.push('(rien enregistré)');
+    } else if (fromStorage.error) {
+      lines.push(`ERREUR: ${fromStorage.error}`);
+    } else {
+      lines.push(`wooUrl: "${fromStorage.wooUrl || '(vide)'}"`);
+      lines.push(`consumerKey: "${fromStorage.consumerKey ? '***' + fromStorage.consumerKey.slice(-4) : '(vide)'}"`);
+      lines.push(`wpUsername: "${fromStorage.wpUsername || '(vide)'}"`);
+    }
+    setDebugInfo(lines.join('\n'));
   };
 
   const StatusBadge = ({ status }) => {
@@ -162,6 +187,17 @@ export default function SettingsScreen({ navigation }) {
         </TouchableOpacity>
         <StatusBadge status={saveStatus} />
 
+        {/* ── Debug ── */}
+        <TouchableOpacity style={styles.debugBtn} onPress={handleDebug}>
+          <Ionicons name="bug-outline" size={16} color="#6b7280" />
+          <Text style={styles.debugBtnText}>🔍 Vérifier le stockage (diagnostic)</Text>
+        </TouchableOpacity>
+        {debugInfo ? (
+          <View style={styles.debugBox}>
+            <Text style={styles.debugText}>{debugInfo}</Text>
+          </View>
+        ) : null}
+
         <Text style={styles.version}>Images Manager Mobile v1.0</Text>
       </ScrollView>
     </SafeAreaView>
@@ -200,5 +236,9 @@ const styles = StyleSheet.create({
   infoText:      { fontSize: 12, color: '#6b7280', marginTop: 10 },
   saveBtn:       { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, shadowColor: '#2563eb', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
   saveBtnText:   { color: '#fff', fontSize: 16, fontWeight: '700' },
+  debugBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#f9fafb' },
+  debugBtnText:  { fontSize: 13, color: '#6b7280' },
+  debugBox:      { backgroundColor: '#1e293b', borderRadius: 8, padding: 12, marginTop: 8 },
+  debugText:     { fontFamily: 'monospace', fontSize: 11, color: '#94a3b8', lineHeight: 18 },
   version:       { textAlign: 'center', color: '#9ca3af', fontSize: 12, marginTop: 16, marginBottom: 8 },
 });
