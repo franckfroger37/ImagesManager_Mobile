@@ -29,22 +29,22 @@ export default function App() {
           <Stack.Screen
             name="Home"
             component={HomeScreen}
-            options={{ title: '📷 Images Manager', headerLeft: () => null }}
+            options={{ title: 'ð· Images Manager V2', headerLeft: () => null }}
           />
           <Stack.Screen
             name="Crop"
             component={CropScreen}
-            options={{ title: '✂️ Recadrage', headerStyle: { backgroundColor: '#111827' } }}
+            options={{ title: 'âï¸ Recadrage', headerStyle: { backgroundColor: '#111827' } }}
           />
           <Stack.Screen
             name="Publish"
             component={PublishScreen}
-            options={{ title: '🚀 Publier le produit' }}
+            options={{ title: 'ð Publier le produit' }}
           />
           <Stack.Screen
             name="Settings"
             component={SettingsScreen}
-            options={{ title: '⚙️ Paramètres' }}
+            options={{ title: 'âï¸ ParamÃ¨tres' }}
           />
         </Stack.Navigator>
       </NavigationContainer>
