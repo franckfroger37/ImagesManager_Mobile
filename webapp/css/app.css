@@ -35,8 +35,9 @@ html, body {
 .screen {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  height: 100vh; /* fallback */
+  height: 100vh;    /* fallback */
+  height: 100dvh;   /* dynamic viewport — must come AFTER 100vh to override */
+  max-height: -webkit-fill-available; /* iOS Safari extra fix */
   overflow: hidden;
   background: var(--bg);
 }
