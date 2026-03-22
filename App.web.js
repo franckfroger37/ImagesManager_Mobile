@@ -49,7 +49,7 @@ export default function App() {
           <Stack.Screen
             name="Home"
             component={HomeScreen}
-            options={{ title: '📷 Images Manager', headerLeft: () => null }}
+            options={{ title: '📷 Images Manager V2', headerLeft: () => null }}
           />
           <Stack.Screen
             name="Crop"
