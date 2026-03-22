@@ -28,6 +28,7 @@
       margin-top: 2px;
     }
   </style>
+<!-- deploy trigger -->
 </head>
 <body>
 <div class="screen">
@@ -35,14 +36,14 @@
   <!-- Header -->
   <header class="header">
     <h1>Images Manager V2</h1>
-    <button class="icon-btn" id="btnSettings" title="ParamÃ¨tres">âï¸</button>
+    <button class="icon-btn" id="btnSettings" title="ParamÃÂ¨tres">Ã¢ÂÂÃ¯Â¸Â</button>
   </header>
 
   <!-- Scrollable content -->
   <main class="content">
 
     <div class="logo-wrap">
-      <div class="logo-icon">ðï¸</div>
+      <div class="logo-icon">Ã°ÂÂÂÃ¯Â¸Â</div>
       <div class="logo-name">Images Manager V2</div>
       <div class="logo-sub">Publiez vos produits en quelques secondes</div>
     </div>
@@ -52,7 +53,7 @@
 
       <!-- Appareil photo -->
       <div class="tile" id="tileCamera">
-        <span class="tile-icon">ð·</span>
+        <span class="tile-icon">Ã°ÂÂÂ·</span>
         <span class="tile-label">Appareil photo</span>
         <input type="file" accept="image/*" capture="environment"
                id="inputCamera" style="display:none">
@@ -60,23 +61,23 @@
 
       <!-- Galerie -->
       <div class="tile" id="tileGallery">
-        <span class="tile-icon">ð¼ï¸</span>
+        <span class="tile-icon">Ã°ÂÂÂ¼Ã¯Â¸Â</span>
         <span class="tile-label">Galerie</span>
         <input type="file" accept="image/*"
                id="inputGallery" style="display:none">
       </div>
 
-      <!-- GÃ©rer les produits -->
+      <!-- GÃÂ©rer les produits -->
       <div class="tile tile-wide" id="tileManage">
-        <span class="tile-icon">ð¦</span>
-        <span class="tile-label">GÃ©rer les produits</span>
+        <span class="tile-icon">Ã°ÂÂÂ¦</span>
+        <span class="tile-label">GÃÂ©rer les produits</span>
       </div>
 
     </div>
 
     <!-- Settings warning (hidden by default) -->
     <div id="settingsWarning" class="card" style="display:none; margin-top:20px; border-color: var(--warn);">
-      <p style="color:var(--warn); font-weight:600; margin-bottom:8px;">â ï¸ ParamÃ¨tres manquants</p>
+      <p style="color:var(--warn); font-weight:600; margin-bottom:8px;">Ã¢ÂÂ Ã¯Â¸Â ParamÃÂ¨tres manquants</p>
       <p style="font-size:14px; color:var(--muted); margin-bottom:12px;">
         Configurez vos identifiants WooCommerce pour publier des produits.
       </p>
@@ -90,7 +91,7 @@
 
 <script src="js/api.js"></script>
 <script>
-  // ââ Init ââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // Ã¢ÂÂÃ¢ÂÂ Init Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
   document.addEventListener('DOMContentLoaded', () => {
     if (!hasSettings()) {
       document.getElementById('settingsWarning').style.display = 'block';
@@ -126,7 +127,7 @@
     if (!file) return;
 
     if (!hasSettings()) {
-      showToast('Configurez vos paramÃ¨tres d\'abord', 'warn');
+      showToast('Configurez vos paramÃÂ¨tres d\'abord', 'warn');
       goTo('settings.html');
       return;
     }
@@ -138,7 +139,7 @@
         sessionStorage.setItem('im_source_image', evt.target.result);
         goTo('crop.html');
       } catch {
-        // sessionStorage full â try smaller storage
+        // sessionStorage full Ã¢ÂÂ try smaller storage
         showToast('Image trop lourde, veuillez en choisir une autre', 'error');
       }
     };
