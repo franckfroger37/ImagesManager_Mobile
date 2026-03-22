@@ -367,7 +367,7 @@ export default function PublishScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container:      { flex: 1, backgroundColor: '#f8fafc' },
-  scroll:         { padding: 16, paddingBottom: 40 },
+  scroll:         { padding: 16, paddingBottom: 120 },
   previewCard:    { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', marginBottom: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
   preview:        { width: 80, height: 80 },
   previewInfo:    { flex: 1, padding: 12, justifyContent: 'center' },
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   warningText:    { flex: 1, fontSize: 13, color: '#92400e', fontWeight: '500' },
   section:        { marginBottom: 16 },
   sectionLabel:   { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.3 },
-  priceInput:     { backgroundColor: '#fff', borderRadius: 10, borderWidth: 2, borderColor: '#2563eb', padding: 14, fontSize: 28, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  priceInput:     { backgroundColor: '#fff', borderRadius: 10, borderWidth: 2, borderColor: '#2563eb', padding: 10, fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
   categorySelector:     { backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb', padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   categorySelectorText: { fontSize: 16, color: '#111827', fontWeight: '500' },
   infoRow:        { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb' },
