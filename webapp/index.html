@@ -7,7 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>Images Manager</title>
+  <title>Images Manager V2</title>
   <link rel="stylesheet" href="css/app.css">
   <style>
     .logo-wrap {
@@ -34,16 +34,16 @@
 
   <!-- Header -->
   <header class="header">
-    <h1>Images Manager</h1>
-    <button class="icon-btn" id="btnSettings" title="Paramètres">⚙️</button>
+    <h1>Images Manager V2</h1>
+    <button class="icon-btn" id="btnSettings" title="ParamÃ¨tres">âï¸</button>
   </header>
 
   <!-- Scrollable content -->
   <main class="content">
 
     <div class="logo-wrap">
-      <div class="logo-icon">🛍️</div>
-      <div class="logo-name">Images Manager</div>
+      <div class="logo-icon">ðï¸</div>
+      <div class="logo-name">Images Manager V2</div>
       <div class="logo-sub">Publiez vos produits en quelques secondes</div>
     </div>
 
@@ -52,7 +52,7 @@
 
       <!-- Appareil photo -->
       <div class="tile" id="tileCamera">
-        <span class="tile-icon">📷</span>
+        <span class="tile-icon">ð·</span>
         <span class="tile-label">Appareil photo</span>
         <input type="file" accept="image/*" capture="environment"
                id="inputCamera" style="display:none">
@@ -60,23 +60,23 @@
 
       <!-- Galerie -->
       <div class="tile" id="tileGallery">
-        <span class="tile-icon">🖼️</span>
+        <span class="tile-icon">ð¼ï¸</span>
         <span class="tile-label">Galerie</span>
         <input type="file" accept="image/*"
                id="inputGallery" style="display:none">
       </div>
 
-      <!-- Gérer les produits -->
+      <!-- GÃ©rer les produits -->
       <div class="tile tile-wide" id="tileManage">
-        <span class="tile-icon">📦</span>
-        <span class="tile-label">Gérer les produits</span>
+        <span class="tile-icon">ð¦</span>
+        <span class="tile-label">GÃ©rer les produits</span>
       </div>
 
     </div>
 
     <!-- Settings warning (hidden by default) -->
     <div id="settingsWarning" class="card" style="display:none; margin-top:20px; border-color: var(--warn);">
-      <p style="color:var(--warn); font-weight:600; margin-bottom:8px;">⚠️ Paramètres manquants</p>
+      <p style="color:var(--warn); font-weight:600; margin-bottom:8px;">â ï¸ ParamÃ¨tres manquants</p>
       <p style="font-size:14px; color:var(--muted); margin-bottom:12px;">
         Configurez vos identifiants WooCommerce pour publier des produits.
       </p>
@@ -90,7 +90,7 @@
 
 <script src="js/api.js"></script>
 <script>
-  // ── Init ──────────────────────────────────────────────────
+  // ââ Init ââââââââââââââââââââââââââââââââââââââââââââââââââ
   document.addEventListener('DOMContentLoaded', () => {
     if (!hasSettings()) {
       document.getElementById('settingsWarning').style.display = 'block';
@@ -126,7 +126,7 @@
     if (!file) return;
 
     if (!hasSettings()) {
-      showToast('Configurez vos paramètres d\'abord', 'warn');
+      showToast('Configurez vos paramÃ¨tres d\'abord', 'warn');
       goTo('settings.html');
       return;
     }
@@ -138,7 +138,7 @@
         sessionStorage.setItem('im_source_image', evt.target.result);
         goTo('crop.html');
       } catch {
-        // sessionStorage full — try smaller storage
+        // sessionStorage full â try smaller storage
         showToast('Image trop lourde, veuillez en choisir une autre', 'error');
       }
     };
