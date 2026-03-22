@@ -184,7 +184,7 @@ export default function PublishScreen({ route, navigation }) {
               <TextInput
                 style={styles.priceInput}
                 value={price}
-                onChangeText={setPrice}
+                onChangeText={v => setPrice(v.replace(/,/g, '.'))}
                 placeholder="0.00"
                 placeholderTextColor="#9ca3af"
                 keyboardType="decimal-pad"
@@ -260,7 +260,7 @@ export default function PublishScreen({ route, navigation }) {
               <TextInput
                 style={styles.priceCorrectInput}
                 value={correctPrice}
-                onChangeText={setCorrectPrice}
+                onChangeText={v => setCorrectPrice(v.replace(/,/g, '.'))}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor="#9ca3af"
