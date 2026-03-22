@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Images Manager",
+    "name": "Images Manager V2",
     "slug": "images-manager",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -39,8 +39,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Autorisez Images Manager à accéder à vos photos.",
-          "cameraPermission": "Autorisez Images Manager à utiliser l'appareil photo."
+          "photosPermission": "Autorisez Images Manager Ã  accÃ©der Ã  vos photos.",
+          "cameraPermission": "Autorisez Images Manager Ã  utiliser l'appareil photo."
         }
       ]
     ]
