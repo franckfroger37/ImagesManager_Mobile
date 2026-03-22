@@ -18,7 +18,8 @@
 
     /* Crop area takes all remaining space */
     #cropArea {
-      flex: 1;
+      flex: 1 1 0;
+      min-height: 0;       /* iOS Safari: prevent flex overflow */
       position: relative;
       overflow: hidden;
       background: #000;
@@ -170,8 +171,17 @@ let lastTouchMid  = null;
 let isDragging    = false;
 let dragStart     = null;
 
+/* ── iOS Safari height fix ─────────────────────────── */
+// 100dvh can be wrong on iOS (reports large viewport, clips bottom-bar)
+// Use window.innerHeight which is always the REAL visible height
+function fixScreenHeight() {
+  const s = document.querySelector('.screen');
+  if (s) s.style.height = window.innerHeight + 'px';
+}
+
 /* ── Init ──────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
+  fixScreenHeight();
   canvas = document.getElementById('cropCanvas');
   ctx    = canvas.getContext('2d');
 
@@ -205,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ── Layout ────────────────────────────────────────── */
 function onResize() {
+  fixScreenHeight();
   const area = document.getElementById('cropArea');
   areaW = area.clientWidth;
   areaH = area.clientHeight;
