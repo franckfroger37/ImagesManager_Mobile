@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb">
+  <title>Gérer les produits — Images Manager</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    /* Inline edit form inside product card */
+    .edit-panel .form-group { margin-bottom: 10px; }
+    .edit-panel .form-group:last-child { margin-bottom: 0; }
+    .edit-panel input,
+    .edit-panel select,
+    .edit-panel textarea {
+      font-size: 15px;
+      padding: 10px 12px;
+    }
+
+    .product-card-header { cursor: pointer; user-select: none; }
+
+    /* Status badge colours */
+    .status-publish { background:#dcfce7; color:#16a34a; }
+    .status-draft   { background:#f1f5f9; color:#64748b; }
+    .status-private { background:#fef9c3; color:#d97706; }
+    .status-pending { background:#ede9fe; color:#7c3aed; }
+
+    /* Sticky search */
+    .sticky-search {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      padding: 0 0 12px;
+      z-index: 5;
+    }
+
+    /* Collapse arrow */
+    .expand-arrow {
+      margin-left: auto;
+      transition: transform .2s;
+      color: var(--muted);
+      font-style: normal;
+    }
+    .product-card.expanded .expand-arrow {
+      transform: rotate(180deg);
+    }
+  </style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- Header -->
+  <header class="header">
+    <button class="icon-btn" id="btnBack" title="Retour">←</button>
+    <h1>Gérer les produits</h1>
+    <button class="icon-btn" id="btnRefresh" title="Actualiser">🔄</button>
+  </header>
+
+  <!-- Scrollable content -->
+  <main class="content" id="mainContent">
+
+    <!-- Search bar (sticky) -->
+    <div class="sticky-search">
+      <div class="search-bar">
+        <input type="search" id="searchInput" placeholder="🔍 Rechercher un produit…"
+               autocomplete="off" inputmode="search">
+        <button class="btn btn-outline btn-sm" id="btnSearch">OK</button>
+      </div>
+    </div>
+
+    <!-- Product list -->
+    <div class="product-list" id="productList">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination" style="display:none;">
+      <button class="btn btn-ghost btn-sm" id="btnPrev">‹ Préc.</button>
+      <span id="pageInfo">Page 1</span>
+      <button class="btn btn-ghost btn-sm" id="btnNext">Suiv. ›</button>
+    </div>
+
+    <div style="height: 8px;"></div>
+
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/api.js"></script>
+<script>
+'use strict';
+
+let currentPage  = 1;
+let totalPages   = 1;
+let searchQuery  = '';
+let categories   = [];
+let loadingCats  = false;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireSettings()) return;
+
+  document.getElementById('btnBack').onclick    = () => goTo('index.html');
+  document.getElementById('btnRefresh').onclick = () => loadPage(1);
+
+  // Search
+  document.getElementById('btnSearch').onclick  = doSearch;
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+
+  // Pagination
+  document.getElementById('btnPrev').onclick = () => loadPage(currentPage - 1);
+  document.getElementById('btnNext').onclick = () => loadPage(currentPage + 1);
+
+  // Load categories in background for edit forms
+  getCategories().then(cats => { categories = cats; }).catch(() => {});
+
+  // Initial load
+  loadPage(1);
+});
+
+function doSearch() {
+  searchQuery = document.getElementById('searchInput').value.trim();
+  loadPage(1);
+}
+
+/* ── Load page ───────────────────────────────────── */
+async function loadPage(page) {
+  currentPage = page;
+  const list  = document.getElementById('productList');
+  list.innerHTML = '<div class="spinner"></div>';
+  document.getElementById('pagination').style.display = 'none';
+
+  try {
+    const { products, totalPages: tp } = await getProducts(page, 10, searchQuery);
+    totalPages = tp;
+    renderProducts(products);
+    updatePagination();
+  } catch (err) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚠️</div>
+        <p>${escHtml(err.message)}</p>
+        <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="loadPage(1)">
+          Réessayer
+        </button>
+      </div>`;
+  }
+}
+
+/* ── Render products ─────────────────────────────── */
+function renderProducts(products) {
+  const list = document.getElementById('productList');
+
+  if (!products.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p>${searchQuery ? 'Aucun résultat pour « ' + escHtml(searchQuery) + ' »' : 'Aucun produit trouvé'}</p>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  products.forEach(p => {
+    const card = buildCard(p);
+    list.appendChild(card);
+  });
+}
+
+function buildCard(p) {
+  const card = document.createElement('div');
+  card.className = 'product-card';
+  card.dataset.id = p.id;
+
+  const thumb = p.images?.[0]?.src || '';
+  const statusLabel = { publish: 'Publié', draft: 'Brouillon', private: 'Privé', pending: 'En attente' }[p.status] || p.status;
+  const statusClass = 'status-' + p.status;
+
+  card.innerHTML = `
+    <div class="product-card-header">
+      ${thumb
+        ? `<img class="product-thumb" src="${escHtml(thumb)}" alt="" loading="lazy">`
+        : `<div class="product-thumb" style="display:flex;align-items:center;justify-content:center;font-size:28px;">🖼️</div>`
+      }
+      <div class="product-info">
+        <div class="product-name">${escHtml(p.name)}</div>
+        <div class="product-price">${p.regular_price ? formatPrice(p.regular_price) : '—'}</div>
+        <div class="product-status">
+          <span class="badge ${statusClass}">${statusLabel}</span>
+          ${p.categories?.length ? ' · ' + p.categories.map(c => escHtml(c.name)).join(', ') : ''}
+        </div>
+      </div>
+      <i class="expand-arrow">▾</i>
+    </div>
+
+    <div class="product-actions">
+      <button class="btn btn-outline btn-sm" onclick="toggleEdit(${p.id})">✏️ Modifier</button>
+      <button class="btn btn-danger btn-sm"  onclick="confirmDelete(${p.id}, '${escHtml(p.name).replace(/'/g, "\\'")}')">🗑️ Supprimer</button>
+    </div>
+
+    <div class="edit-panel" id="edit-${p.id}">
+      <div class="form-group">
+        <label>Nom</label>
+        <input type="text" id="edit-name-${p.id}" value="${escHtml(p.name)}">
+      </div>
+      <div class="form-group">
+        <label>Prix (€)</label>
+        <input type="number" id="edit-price-${p.id}"
+               value="${p.regular_price || ''}" inputmode="decimal" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label>Catégorie</label>
+        <select id="edit-cat-${p.id}">
+          <option value="">— Aucune —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Statut</label>
+        <select id="edit-status-${p.id}">
+          <option value="publish" ${p.status==='publish'?'selected':''}>Publié</option>
+          <option value="draft"   ${p.status==='draft'  ?'selected':''}>Brouillon</option>
+          <option value="private" ${p.status==='private'?'selected':''}>Privé</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveEdit(${p.id})">
+        💾 Enregistrer
+      </button>
+    </div>
+  `;
+
+  // Clicking the header toggles edit
+  card.querySelector('.product-card-header').addEventListener('click', () => toggleEdit(p.id));
+
+  // Pre-fill category dropdown once cats are loaded
+  fillCatSelect(p.id, p.categories?.[0]?.id);
+
+  return card;
+}
+
+function fillCatSelect(productId, selectedCatId) {
+  const sel = document.getElementById(`edit-cat-${productId}`);
+  if (!sel) return;
+
+  const buildOptions = () => {
+    sel.innerHTML = '<option value="">— Aucune —</option>';
+    categories
+      .filter(c => c.name !== 'Uncategorized')
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+      .forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        if (selectedCatId && c.id === selectedCatId) opt.selected = true;
+        sel.appendChild(opt);
+      });
+  };
+
+  if (categories.length) {
+    buildOptions();
+  } else {
+    // Try again after a short delay (cats may still be loading)
+    const interval = setInterval(() => {
+      if (categories.length) {
+        buildOptions();
+        clearInterval(interval);
+      }
+    }, 500);
+    // Give up after 10s
+    setTimeout(() => clearInterval(interval), 10000);
+  }
+}
+
+/* ── Toggle edit panel ───────────────────────────── */
+function toggleEdit(id) {
+  const card  = document.querySelector(`.product-card[data-id="${id}"]`);
+  const panel = document.getElementById('edit-' + id);
+  if (!card || !panel) return;
+
+  const isOpen = panel.classList.contains('open');
+
+  // Close all others
+  document.querySelectorAll('.edit-panel.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.product-card.expanded').forEach(el => el.classList.remove('expanded'));
+
+  if (!isOpen) {
+    panel.classList.add('open');
+    card.classList.add('expanded');
+    // Scroll into view
+    setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  }
+}
+
+/* ── Save edit ───────────────────────────────────── */
+async function saveEdit(id) {
+  const name   = document.getElementById(`edit-name-${id}`).value.trim();
+  const price  = document.getElementById(`edit-price-${id}`).value.trim();
+  const catId  = document.getElementById(`edit-cat-${id}`).value;
+  const status = document.getElementById(`edit-status-${id}`).value;
+
+  if (!name) { showToast('Le nom est obligatoire', 'warn'); return; }
+
+  const btn = document.querySelector(`#edit-${id} .btn-primary`);
+  btn.disabled = true;
+  btn.textContent = '⏳ Enregistrement…';
+
+  try {
+    const data = {
+      name,
+      regular_price: price ? parseFloat(price).toFixed(2) : '',
+      status
+    };
+    if (catId) data.categories = [{ id: parseInt(catId, 10) }];
+    else       data.categories = [];
+
+    const updated = await updateProduct(id, data);
+
+    showToast('✅ Produit mis à jour', 'success');
+
+    // Update the card display without full reload
+    const card = document.querySelector(`.product-card[data-id="${id}"]`);
+    if (card) {
+      card.querySelector('.product-name').textContent = updated.name;
+      card.querySelector('.product-price').textContent = updated.regular_price
+        ? formatPrice(updated.regular_price) : '—';
+      const statusLabel = { publish: 'Publié', draft: 'Brouillon', private: 'Privé', pending: 'En attente' }[updated.status] || updated.status;
+      const badge = card.querySelector('.badge');
+      badge.className = 'badge status-' + updated.status;
+      badge.textContent = statusLabel;
+    }
+
+    // Close panel
+    document.getElementById('edit-' + id).classList.remove('open');
+    card?.classList.remove('expanded');
+
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '💾 Enregistrer';
+  }
+}
+
+/* ── Delete ──────────────────────────────────────── */
+async function confirmDelete(id, name) {
+  const ok = await showConfirm(
+    'Supprimer le produit ?',
+    `« ${name} » sera définitivement supprimé de WooCommerce.`
+  );
+  if (!ok) return;
+
+  try {
+    await deleteProduct(id);
+    showToast('Produit supprimé', 'success');
+
+    // Remove card from DOM
+    const card = document.querySelector(`.product-card[data-id="${id}"]`);
+    if (card) {
+      card.style.transition = 'opacity .2s';
+      card.style.opacity = '0';
+      setTimeout(() => card.remove(), 220);
+    }
+
+    // If page is now empty, reload
+    setTimeout(() => {
+      const remaining = document.querySelectorAll('.product-card').length;
+      if (remaining === 0) loadPage(Math.max(1, currentPage - 1));
+    }, 300);
+
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
+}
+
+/* ── Pagination ──────────────────────────────────── */
+function updatePagination() {
+  const wrap = document.getElementById('pagination');
+  if (totalPages <= 1) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  document.getElementById('pageInfo').textContent = `Page ${currentPage} / ${totalPages}`;
+  document.getElementById('btnPrev').disabled = currentPage <= 1;
+  document.getElementById('btnNext').disabled = currentPage >= totalPages;
+}
+</script>
+</body>
+</html>
