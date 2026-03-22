@@ -8,8 +8,9 @@ import { calcCenterCrop } from '../services/imageService';
 
 const SCREEN_W = Dimensions.get('window').width;
 const TARGET_RATIO = 2 / 3;
+const SCREEN_H = Dimensions.get('window').height;
 const FRAME_W = SCREEN_W - 32;
-const FRAME_H = FRAME_W / TARGET_RATIO;
+const FRAME_H = Math.min(FRAME_W / TARGET_RATIO, SCREEN_H * 0.58);
 
 export default function CropScreen({ route, navigation }) {
   const { uri, width: origW, height: origH, fileName } = route.params;
@@ -169,7 +170,7 @@ const CORNER_THICKNESS = 3;
 const CORNER_COLOR = '#fff';
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111827', alignItems: 'center', paddingTop: 12 },
+  container: { flex: 1, backgroundColor: '#111827', alignItems: 'center', paddingTop: 12, paddingBottom: 16 },
   instruction: { color: '#d1d5db', fontSize: 13, textAlign: 'center', marginBottom: 12, paddingHorizontal: 24 },
   frameContainer: { overflow: 'hidden', backgroundColor: '#000', borderRadius: 4, position: 'relative' },
   imageWrapper: { position: 'absolute' },
