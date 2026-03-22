@@ -17,9 +17,10 @@
     <link rel="icon" type="image/png" href="/ImagesManager_Mobile/favicon.png" />
 
     <style id="expo-reset">
-      html, body { height: 100%; }
-      body { overflow: visible; }
-      #root { display: flex; flex: 1; height: 100%; overflow: hidden; }
+      html, body { height: 100%; margin: 0; padding: 0; }
+      body { overflow: hidden; }
+      /* flex-direction: column obligatoire pour que le layout RN fonctionne sur web */
+      #root { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; }
     </style>
     <style>
       #im-splash {
@@ -53,12 +54,10 @@
 
     <script>
       // ── Capture beforeinstallprompt AVANT que React charge ──────────────
-      // Stocké dans window.__installPrompt pour que HomeScreen le retrouve
       window.__installPrompt = null;
       window.addEventListener('beforeinstallprompt', function(e) {
         e.preventDefault();
         window.__installPrompt = e;
-        // Notifie React si déjà monté
         window.dispatchEvent(new CustomEvent('pwa-installable'));
       });
 

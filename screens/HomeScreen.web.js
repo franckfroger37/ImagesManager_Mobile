@@ -77,7 +77,8 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      {/* flex: 1 indispensable sur web pour que le ScrollView ait une hauteur contrainte */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scroll}>
 
         {/* Bouton installation Chrome/Android */}
         {installPrompt && !installed && !isInStandaloneMode && (
@@ -168,7 +169,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
   settingsBtn: { padding: 4 },
-  scroll: { padding: 0, paddingBottom: 24 },
+  /* flex: 1 contraint la hauteur du ScrollView → scroll activé sur web */
+  scrollView: { flex: 1 },
+  scroll: { padding: 0, paddingBottom: 60 },
 
   installBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
