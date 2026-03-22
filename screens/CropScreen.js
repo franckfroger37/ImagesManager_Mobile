@@ -9,8 +9,12 @@ import { calcCenterCrop } from '../services/imageService';
 const SCREEN_W = Dimensions.get('window').width;
 const TARGET_RATIO = 2 / 3;
 const SCREEN_H = Dimensions.get('window').height;
-const FRAME_W = SCREEN_W - 32;
-const FRAME_H = Math.min(FRAME_W / TARGET_RATIO, SCREEN_H * 0.58);
+const _FW = SCREEN_W - 32;
+const _FH = _FW / TARGET_RATIO;
+// Scale proportionally so FRAME fits on screen while keeping 2:3 ratio
+const _SCALE = Math.min(1, (SCREEN_H * 0.58) / _FH);
+const FRAME_W = Math.round(_FW * _SCALE);
+const FRAME_H = Math.round(_FH * _SCALE);
 
 export default function CropScreen({ route, navigation }) {
   const { uri, width: origW, height: origH, fileName } = route.params;
