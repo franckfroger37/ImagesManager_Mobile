@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#2563eb">
-  <title>Publier — Images Manager</title>
+  <title>Publier â Images Manager V2</title>
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
 
   <!-- Header -->
   <header class="header">
-    <button class="icon-btn" id="btnBack" title="Retour">←</button>
+    <button class="icon-btn" id="btnBack" title="Retour">â</button>
     <h1>Publier le produit</h1>
   </header>
 
@@ -21,7 +21,7 @@
 
     <!-- Image preview -->
     <div class="img-preview-wrap">
-      <img id="previewImg" src="" alt="Aperçu">
+      <img id="previewImg" src="" alt="AperÃ§u">
     </div>
 
     <!-- Product form -->
@@ -32,31 +32,31 @@
     </div>
 
     <div class="form-group">
-      <label for="price">Prix (€) *</label>
+      <label for="price">Prix (â¬) *</label>
       <input type="number" id="price" placeholder="29.90"
              inputmode="decimal" step="0.01" min="0">
     </div>
 
     <div class="form-group">
-      <label for="category">Catégorie</label>
+      <label for="category">CatÃ©gorie</label>
       <select id="category">
-        <option value="">— Chargement… —</option>
+        <option value="">â Chargementâ¦ â</option>
       </select>
     </div>
 
     <div class="form-group">
       <label for="description">Description (optionnel)</label>
       <textarea id="description" rows="3"
-                placeholder="Décrivez le produit : état, taille, matière…"></textarea>
+                placeholder="DÃ©crivez le produit : Ã©tat, taille, matiÃ¨reâ¦"></textarea>
     </div>
 
     <!-- Status selector -->
     <div class="form-group">
       <label for="status">Statut de publication</label>
       <select id="status">
-        <option value="publish">Publié (visible immédiatement)</option>
+        <option value="publish">PubliÃ© (visible immÃ©diatement)</option>
         <option value="draft">Brouillon</option>
-        <option value="private">Privé</option>
+        <option value="private">PrivÃ©</option>
       </select>
     </div>
 
@@ -65,18 +65,18 @@
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" id="progressFill"></div>
       </div>
-      <p class="progress-label" id="progressLabel">Préparation…</p>
+      <p class="progress-label" id="progressLabel">PrÃ©parationâ¦</p>
     </div>
 
     <!-- Publish button -->
     <button class="btn btn-primary btn-full" id="btnPublish">
-      📤 Publier le produit
+      ð¤ Publier le produit
     </button>
 
     <div style="height: 8px;"></div>
 
     <button class="btn btn-ghost btn-full btn-sm" id="btnDiscard">
-      Annuler et revenir à l'accueil
+      Annuler et revenir Ã  l'accueil
     </button>
 
   </main>
@@ -91,19 +91,19 @@
 document.addEventListener('DOMContentLoaded', async () => {
   if (!requireSettings()) return;
 
-  // ── Load preview image ────────────────────────────
+  // ââ Load preview image ââââââââââââââââââââââââââââ
   const dataUrl = sessionStorage.getItem('im_cropped_image');
   if (!dataUrl) {
-    showToast('Aucune image recadrée trouvée', 'error');
+    showToast('Aucune image recadrÃ©e trouvÃ©e', 'error');
     setTimeout(() => goTo('index.html'), 1000);
     return;
   }
   document.getElementById('previewImg').src = dataUrl;
 
-  // ── Load categories ───────────────────────────────
+  // ââ Load categories âââââââââââââââââââââââââââââââ
   loadCategories();
 
-  // ── Buttons ───────────────────────────────────────
+  // ââ Buttons âââââââââââââââââââââââââââââââââââââââ
   document.getElementById('btnBack').onclick    = () => history.back();
   document.getElementById('btnDiscard').onclick = () => {
     sessionStorage.removeItem('im_source_image');
@@ -117,7 +117,7 @@ async function loadCategories() {
   const sel = document.getElementById('category');
   try {
     const cats = await getCategories();
-    sel.innerHTML = '<option value="">— Aucune catégorie —</option>';
+    sel.innerHTML = '<option value="">â Aucune catÃ©gorie â</option>';
     cats
       .filter(c => c.name !== 'Uncategorized')
       .sort((a, b) => a.name.localeCompare(b.name, 'fr'))
@@ -128,8 +128,8 @@ async function loadCategories() {
         sel.appendChild(opt);
       });
   } catch (err) {
-    sel.innerHTML = '<option value="">Erreur chargement catégories</option>';
-    showToast('Impossible de charger les catégories', 'warn');
+    sel.innerHTML = '<option value="">Erreur chargement catÃ©gories</option>';
+    showToast('Impossible de charger les catÃ©gories', 'warn');
   }
 }
 
@@ -159,17 +159,17 @@ async function publish() {
 
   const btn = document.getElementById('btnPublish');
   btn.disabled = true;
-  btn.textContent = '⏳ Publication…';
-  setProgress(5, 'Préparation de l\'image…');
+  btn.textContent = 'â³ Publicationâ¦';
+  setProgress(5, 'PrÃ©paration de l\'imageâ¦');
 
   try {
-    // ── Step 1: Convert dataURL → Blob ────────────
+    // ââ Step 1: Convert dataURL â Blob ââââââââââââ
     const dataUrl = sessionStorage.getItem('im_cropped_image');
     const blob    = dataURLtoBlob(dataUrl);
 
-    setProgress(20, 'Upload de l\'image vers WordPress…');
+    setProgress(20, 'Upload de l\'image vers WordPressâ¦');
 
-    // ── Step 2: Upload image ──────────────────────
+    // ââ Step 2: Upload image ââââââââââââââââââââââ
     const safeTitle = title.toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
@@ -177,9 +177,9 @@ async function publish() {
 
     const mediaId = await uploadImage(blob, filename);
 
-    setProgress(65, 'Création du produit WooCommerce…');
+    setProgress(65, 'CrÃ©ation du produit WooCommerceâ¦');
 
-    // ── Step 3: Create product ────────────────────
+    // ââ Step 3: Create product ââââââââââââââââââââ
     const productData = {
       name:          title,
       regular_price: parseFloat(price).toFixed(2),
@@ -194,20 +194,20 @@ async function publish() {
 
     const product = await createProduct(productData);
 
-    setProgress(100, 'Produit publié !');
+    setProgress(100, 'Produit publiÃ© !');
 
-    // ── Clean up ──────────────────────────────────
+    // ââ Clean up ââââââââââââââââââââââââââââââââââ
     sessionStorage.removeItem('im_source_image');
     sessionStorage.removeItem('im_cropped_image');
 
-    showToast('✅ Produit publié avec succès !', 'success', 4000);
+    showToast('â Produit publiÃ© avec succÃ¨s !', 'success', 4000);
 
     setTimeout(() => goTo('index.html'), 1500);
 
   } catch (err) {
     showToast('Erreur : ' + err.message, 'error', 5000);
     btn.disabled = false;
-    btn.textContent = '📤 Publier le produit';
+    btn.textContent = 'ð¤ Publier le produit';
     document.getElementById('progressWrap').style.display = 'none';
   }
 }
