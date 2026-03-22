@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb">
+  <title>Publier — Images Manager</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="screen">
+
+  <!-- Header -->
+  <header class="header">
+    <button class="icon-btn" id="btnBack" title="Retour">←</button>
+    <h1>Publier le produit</h1>
+  </header>
+
+  <!-- Scrollable content -->
+  <main class="content">
+
+    <!-- Image preview -->
+    <div class="img-preview-wrap">
+      <img id="previewImg" src="" alt="Aperçu">
+    </div>
+
+    <!-- Product form -->
+    <div class="form-group">
+      <label for="title">Nom du produit *</label>
+      <input type="text" id="title" placeholder="Ex : Veste en cuir marron T42"
+             autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label for="price">Prix (€) *</label>
+      <input type="number" id="price" placeholder="29.90"
+             inputmode="decimal" step="0.01" min="0">
+    </div>
+
+    <div class="form-group">
+      <label for="category">Catégorie</label>
+      <select id="category">
+        <option value="">— Chargement… —</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description (optionnel)</label>
+      <textarea id="description" rows="3"
+                placeholder="Décrivez le produit : état, taille, matière…"></textarea>
+    </div>
+
+    <!-- Status selector -->
+    <div class="form-group">
+      <label for="status">Statut de publication</label>
+      <select id="status">
+        <option value="publish">Publié (visible immédiatement)</option>
+        <option value="draft">Brouillon</option>
+        <option value="private">Privé</option>
+      </select>
+    </div>
+
+    <!-- Progress bar (hidden until publish) -->
+    <div class="progress-wrap" id="progressWrap" style="display:none;">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <p class="progress-label" id="progressLabel">Préparation…</p>
+    </div>
+
+    <!-- Publish button -->
+    <button class="btn btn-primary btn-full" id="btnPublish">
+      📤 Publier le produit
+    </button>
+
+    <div style="height: 8px;"></div>
+
+    <button class="btn btn-ghost btn-full btn-sm" id="btnDiscard">
+      Annuler et revenir à l'accueil
+    </button>
+
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/api.js"></script>
+<script>
+'use strict';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireSettings()) return;
+
+  // ── Load preview image ────────────────────────────
+  const dataUrl = sessionStorage.getItem('im_cropped_image');
+  if (!dataUrl) {
+    showToast('Aucune image recadrée trouvée', 'error');
+    setTimeout(() => goTo('index.html'), 1000);
+    return;
+  }
+  document.getElementById('previewImg').src = dataUrl;
+
+  // ── Load categories ───────────────────────────────
+  loadCategories();
+
+  // ── Buttons ───────────────────────────────────────
+  document.getElementById('btnBack').onclick    = () => history.back();
+  document.getElementById('btnDiscard').onclick = () => {
+    sessionStorage.removeItem('im_source_image');
+    sessionStorage.removeItem('im_cropped_image');
+    goTo('index.html');
+  };
+  document.getElementById('btnPublish').onclick = publish;
+});
+
+async function loadCategories() {
+  const sel = document.getElementById('category');
+  try {
+    const cats = await getCategories();
+    sel.innerHTML = '<option value="">— Aucune catégorie —</option>';
+    cats
+      .filter(c => c.name !== 'Uncategorized')
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+      .forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name + (c.count ? ` (${c.count})` : '');
+        sel.appendChild(opt);
+      });
+  } catch (err) {
+    sel.innerHTML = '<option value="">Erreur chargement catégories</option>';
+    showToast('Impossible de charger les catégories', 'warn');
+  }
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+
+async function publish() {
+  const title    = document.getElementById('title').value.trim();
+  const price    = document.getElementById('price').value.trim();
+  const catId    = document.getElementById('category').value;
+  const desc     = document.getElementById('description').value.trim();
+  const status   = document.getElementById('status').value;
+
+  if (!title) {
+    showToast('Le nom du produit est obligatoire', 'warn');
+    document.getElementById('title').focus();
+    return;
+  }
+  if (!price || isNaN(parseFloat(price)) || parseFloat(price) < 0) {
+    showToast('Entrez un prix valide', 'warn');
+    document.getElementById('price').focus();
+    return;
+  }
+
+  const btn = document.getElementById('btnPublish');
+  btn.disabled = true;
+  btn.textContent = '⏳ Publication…';
+  setProgress(5, 'Préparation de l\'image…');
+
+  try {
+    // ── Step 1: Convert dataURL → Blob ────────────
+    const dataUrl = sessionStorage.getItem('im_cropped_image');
+    const blob    = dataURLtoBlob(dataUrl);
+
+    setProgress(20, 'Upload de l\'image vers WordPress…');
+
+    // ── Step 2: Upload image ──────────────────────
+    const safeTitle = title.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    const filename = (safeTitle || 'produit') + '-' + Date.now() + '.jpg';
+
+    const mediaId = await uploadImage(blob, filename);
+
+    setProgress(65, 'Création du produit WooCommerce…');
+
+    // ── Step 3: Create product ────────────────────
+    const productData = {
+      name:          title,
+      regular_price: parseFloat(price).toFixed(2),
+      description:   desc,
+      status:        status,
+      images:        [{ id: mediaId }]
+    };
+
+    if (catId) {
+      productData.categories = [{ id: parseInt(catId, 10) }];
+    }
+
+    const product = await createProduct(productData);
+
+    setProgress(100, 'Produit publié !');
+
+    // ── Clean up ──────────────────────────────────
+    sessionStorage.removeItem('im_source_image');
+    sessionStorage.removeItem('im_cropped_image');
+
+    showToast('✅ Produit publié avec succès !', 'success', 4000);
+
+    setTimeout(() => goTo('index.html'), 1500);
+
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error', 5000);
+    btn.disabled = false;
+    btn.textContent = '📤 Publier le produit';
+    document.getElementById('progressWrap').style.display = 'none';
+  }
+}
+
+function dataURLtoBlob(dataUrl) {
+  const [header, base64] = dataUrl.split(',');
+  const mimeMatch = header.match(/:(.*?);/);
+  const mime  = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  const bytes = atob(base64);
+  const arr   = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+</script>
+</body>
+</html>
