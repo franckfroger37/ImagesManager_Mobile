@@ -113,7 +113,9 @@ export default function ManageProductsScreen({ navigation }) {
     try {
       await deleteProduct(selected.id, settings);
       removeLocalProduct(selected.id);
-    } catch (e) {
+
+      closePanel();
+      setActioning(false);    } catch (e) {
       setActionMsg({ ok: false, msg: `❌ ${e.message}` });
       setActioning(false);
     }
