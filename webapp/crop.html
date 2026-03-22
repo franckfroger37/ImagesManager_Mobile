@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Recadrer — Images Manager</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    body { background: #000; }
+    .screen { background: #000; }
+    .header {
+      background: #111;
+      border-bottom-color: #333;
+    }
+    .header h1 { color: #fff; }
+    .header .icon-btn { color: #aaa; }
+
+    /* Crop area takes all remaining space */
+    #cropArea {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+      touch-action: none; /* we handle all touches */
+    }
+
+    #cropCanvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Frame overlay (SVG or div) */
+    #frameOverlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    /* Semi-transparent mask around the crop frame */
+    .mask { fill: rgba(0,0,0,.55); }
+    .frame-border { fill: none; stroke: #fff; stroke-width: 2; opacity: .9; }
+    .frame-corner { fill: #fff; }
+
+    .crop-info {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.6);
+      color: #fff;
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    /* Bottom bar on dark */
+    .bottom-bar {
+      background: #111;
+      border-top-color: #333;
+    }
+    .bottom-bar .btn-ghost {
+      background: #222;
+      color: #fff;
+      border-color: #444;
+    }
+    .bottom-bar .btn-primary {
+      background: var(--primary);
+    }
+
+    /* Loading overlay */
+    #loadingOverlay {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 10;
+    }
+    #loadingOverlay p {
+      color: #aaa;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- Header -->
+  <header class="header">
+    <button class="icon-btn" id="btnBack" title="Retour" style="color:#aaa;">←</button>
+    <h1>Recadrer</h1>
+    <button class="icon-btn" id="btnReset" title="Réinitialiser" style="color:#aaa;">↺</button>
+  </header>
+
+  <!-- Crop area -->
+  <div id="cropArea">
+    <canvas id="cropCanvas"></canvas>
+
+    <!-- SVG frame overlay -->
+    <svg id="frameOverlay" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <defs>
+        <mask id="holeMask">
+          <rect width="100%" height="100%" fill="white"/>
+          <rect id="holeRect" fill="black"/>
+        </mask>
+      </defs>
+      <!-- Dark mask with hole -->
+      <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)" mask="url(#holeMask)"/>
+      <!-- Frame border -->
+      <rect id="frameBorder" class="frame-border"/>
+      <!-- Corner handles (4 corners) -->
+      <g id="corners"></g>
+    </svg>
+
+    <!-- Info badge -->
+    <div class="crop-info">600 × 900 px — Pincez pour zoomer, glissez pour déplacer</div>
+
+    <!-- Loading overlay -->
+    <div id="loadingOverlay">
+      <div class="spinner" style="border-top-color:#fff;"></div>
+      <p>Chargement de l'image…</p>
+    </div>
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="bottom-bar">
+    <button class="btn btn-ghost" id="btnCancel">Annuler</button>
+    <button class="btn btn-primary" id="btnValidate">Valider →</button>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script src="js/api.js"></script>
+<script>
+'use strict';
+
+/* ── Constants ─────────────────────────────────────── */
+const CROP_W = 600;
+const CROP_H = 900;
+const CROP_RATIO = CROP_W / CROP_H; // 2/3
+
+/* ── State ─────────────────────────────────────────── */
+let img = null;        // HTMLImageElement
+let canvas, ctx;
+let areaW, areaH;      // crop area size in CSS px
+
+// Frame position & size (CSS px, centered in area)
+let frameX, frameY, frameW, frameH;
+
+// Image transform (relative to canvas/frame coords)
+let imgScale = 1;      // zoom
+let imgOffX  = 0;      // offset from frame center
+let imgOffY  = 0;
+
+// Gesture tracking
+let lastTouchDist = null;
+let lastTouchMid  = null;
+let isDragging    = false;
+let dragStart     = null;
+
+/* ── Init ──────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  canvas = document.getElementById('cropCanvas');
+  ctx    = canvas.getContext('2d');
+
+  document.getElementById('btnBack').onclick    = () => history.back();
+  document.getElementById('btnCancel').onclick  = () => goTo('index.html');
+  document.getElementById('btnReset').onclick   = resetTransform;
+  document.getElementById('btnValidate').onclick = validate;
+
+  const src = sessionStorage.getItem('im_source_image');
+  if (!src) {
+    showToast('Aucune image sélectionnée', 'error');
+    setTimeout(() => goTo('index.html'), 1200);
+    return;
+  }
+
+  img = new Image();
+  img.onload = () => {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    onResize();
+    window.addEventListener('resize', onResize);
+    resetTransform();
+    bindGestures();
+    render();
+  };
+  img.onerror = () => {
+    showToast('Impossible de charger l\'image', 'error');
+    setTimeout(() => goTo('index.html'), 1200);
+  };
+  img.src = src;
+});
+
+/* ── Layout ────────────────────────────────────────── */
+function onResize() {
+  const area = document.getElementById('cropArea');
+  areaW = area.clientWidth;
+  areaH = area.clientHeight;
+
+  // Canvas resolution = CSS size
+  canvas.width  = areaW;
+  canvas.height = areaH;
+
+  // Compute frame rect (fit 2:3 inside area with 24px margin)
+  const margin  = 24;
+  const maxW    = areaW - margin * 2;
+  const maxH    = areaH - margin * 2;
+
+  if (maxW / CROP_RATIO <= maxH) {
+    frameW = maxW;
+    frameH = frameW / CROP_RATIO;
+  } else {
+    frameH = maxH;
+    frameW = frameH * CROP_RATIO;
+  }
+
+  frameX = (areaW - frameW) / 2;
+  frameY = (areaH - frameH) / 2;
+
+  updateFrameSVG();
+  if (img) {
+    clampOffset();
+    render();
+  }
+}
+
+function updateFrameSVG() {
+  const svg      = document.getElementById('frameOverlay');
+  const holeRect = document.getElementById('holeRect');
+  const border   = document.getElementById('frameBorder');
+  const cornersG = document.getElementById('corners');
+
+  svg.setAttribute('viewBox', `0 0 ${areaW} ${areaH}`);
+  svg.setAttribute('width', areaW);
+  svg.setAttribute('height', areaH);
+
+  holeRect.setAttribute('x', frameX);
+  holeRect.setAttribute('y', frameY);
+  holeRect.setAttribute('width', frameW);
+  holeRect.setAttribute('height', frameH);
+
+  border.setAttribute('x', frameX);
+  border.setAttribute('y', frameY);
+  border.setAttribute('width', frameW);
+  border.setAttribute('height', frameH);
+
+  // Corner handles
+  const cs = 18; // corner size
+  const corners = [
+    [frameX,         frameY,          cs, cs],  // TL
+    [frameX+frameW-cs, frameY,        cs, cs],  // TR
+    [frameX,         frameY+frameH-cs, cs, cs], // BL
+    [frameX+frameW-cs, frameY+frameH-cs, cs, cs] // BR
+  ];
+
+  cornersG.innerHTML = '';
+  corners.forEach(([x, y, w, h]) => {
+    const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    r.setAttribute('x', x); r.setAttribute('y', y);
+    r.setAttribute('width', w); r.setAttribute('height', h);
+    r.setAttribute('fill', '#fff');
+    r.setAttribute('rx', '3');
+    cornersG.appendChild(r);
+  });
+}
+
+/* ── Transform helpers ─────────────────────────────── */
+function resetTransform() {
+  if (!img) return;
+  // Fit image to cover the frame exactly
+  const scaleX = frameW / img.naturalWidth;
+  const scaleY = frameH / img.naturalHeight;
+  imgScale = Math.max(scaleX, scaleY);
+  imgOffX  = 0;
+  imgOffY  = 0;
+  clampOffset();
+  render();
+}
+
+function clampOffset() {
+  // Ensure image always covers the frame
+  const imgW = img.naturalWidth  * imgScale;
+  const imgH = img.naturalHeight * imgScale;
+
+  const maxX = (imgW - frameW) / 2;
+  const maxY = (imgH - frameH) / 2;
+
+  imgOffX = Math.max(-maxX, Math.min(maxX, imgOffX));
+  imgOffY = Math.max(-maxY, Math.min(maxY, imgOffY));
+}
+
+/* ── Render ────────────────────────────────────────── */
+function render() {
+  if (!img || !ctx) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const cx = frameX + frameW / 2 + imgOffX;
+  const cy = frameY + frameH / 2 + imgOffY;
+  const dw = img.naturalWidth  * imgScale;
+  const dh = img.naturalHeight * imgScale;
+
+  ctx.drawImage(img, cx - dw/2, cy - dh/2, dw, dh);
+}
+
+/* ── Gesture binding ───────────────────────────────── */
+function bindGestures() {
+  const area = document.getElementById('cropArea');
+
+  // Touch
+  area.addEventListener('touchstart',  onTouchStart,  { passive: false });
+  area.addEventListener('touchmove',   onTouchMove,   { passive: false });
+  area.addEventListener('touchend',    onTouchEnd,    { passive: false });
+  area.addEventListener('touchcancel', onTouchEnd,    { passive: false });
+
+  // Mouse (desktop)
+  area.addEventListener('mousedown', onMouseDown);
+  area.addEventListener('mousemove', onMouseMove);
+  area.addEventListener('mouseup',   onMouseUp);
+  area.addEventListener('mouseleave', onMouseUp);
+  area.addEventListener('wheel', onWheel, { passive: false });
+}
+
+function touchDist(t1, t2) {
+  const dx = t1.clientX - t2.clientX;
+  const dy = t1.clientY - t2.clientY;
+  return Math.hypot(dx, dy);
+}
+
+function touchMid(t1, t2) {
+  const area = document.getElementById('cropArea');
+  const rect  = area.getBoundingClientRect();
+  return {
+    x: ((t1.clientX + t2.clientX) / 2) - rect.left,
+    y: ((t1.clientY + t2.clientY) / 2) - rect.top
+  };
+}
+
+function onTouchStart(e) {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    lastTouchDist = touchDist(e.touches[0], e.touches[1]);
+    lastTouchMid  = touchMid(e.touches[0], e.touches[1]);
+    isDragging    = false;
+  } else if (e.touches.length === 1) {
+    isDragging = true;
+    dragStart  = { x: e.touches[0].clientX, y: e.touches[0].clientY,
+                   ox: imgOffX, oy: imgOffY };
+  }
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    const dist = touchDist(e.touches[0], e.touches[1]);
+    const mid  = touchMid(e.touches[0], e.touches[1]);
+
+    // Pinch zoom
+    if (lastTouchDist) {
+      const ratio = dist / lastTouchDist;
+      applyZoom(ratio, mid);
+    }
+
+    // Pan (midpoint movement)
+    if (lastTouchMid) {
+      imgOffX += mid.x - lastTouchMid.x;
+      imgOffY += mid.y - lastTouchMid.y;
+      clampOffset();
+    }
+
+    lastTouchDist = dist;
+    lastTouchMid  = mid;
+    render();
+  } else if (e.touches.length === 1 && isDragging && dragStart) {
+    imgOffX = dragStart.ox + (e.touches[0].clientX - dragStart.x);
+    imgOffY = dragStart.oy + (e.touches[0].clientY - dragStart.y);
+    clampOffset();
+    render();
+  }
+}
+
+function onTouchEnd(e) {
+  if (e.touches.length < 2) { lastTouchDist = null; lastTouchMid = null; }
+  if (e.touches.length === 0) { isDragging = false; dragStart = null; }
+}
+
+function onMouseDown(e) {
+  isDragging = true;
+  dragStart  = { x: e.clientX, y: e.clientY, ox: imgOffX, oy: imgOffY };
+}
+
+function onMouseMove(e) {
+  if (!isDragging || !dragStart) return;
+  imgOffX = dragStart.ox + (e.clientX - dragStart.x);
+  imgOffY = dragStart.oy + (e.clientY - dragStart.y);
+  clampOffset();
+  render();
+}
+
+function onMouseUp() {
+  isDragging = false;
+  dragStart  = null;
+}
+
+function onWheel(e) {
+  e.preventDefault();
+  const rect = document.getElementById('cropArea').getBoundingClientRect();
+  const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  applyZoom(factor, pt);
+  render();
+}
+
+function applyZoom(ratio, centerPt) {
+  if (!img) return;
+  // Minimum scale = cover frame
+  const minScale = Math.max(
+    frameW / img.naturalWidth,
+    frameH / img.naturalHeight
+  );
+  const maxScale = minScale * 6;
+
+  const newScale = Math.max(minScale, Math.min(maxScale, imgScale * ratio));
+  const scaleDiff = newScale / imgScale;
+
+  // Zoom towards pinch center
+  const fx = frameX + frameW / 2;
+  const fy = frameY + frameH / 2;
+  const dx = centerPt.x - fx;
+  const dy = centerPt.y - fy;
+
+  imgOffX = (imgOffX + dx) * scaleDiff - dx;
+  imgOffY = (imgOffY + dy) * scaleDiff - dy;
+  imgScale = newScale;
+
+  clampOffset();
+}
+
+/* ── Validate (export 600×900) ─────────────────────── */
+function validate() {
+  if (!img) return;
+
+  const btn = document.getElementById('btnValidate');
+  btn.disabled = true;
+  btn.textContent = '⏳…';
+
+  try {
+    // Off-screen canvas at target resolution
+    const out  = document.createElement('canvas');
+    out.width  = CROP_W;
+    out.height = CROP_H;
+    const octx = out.getContext('2d');
+
+    // Scale factors from frame CSS px → output px
+    const scaleToOut = CROP_W / frameW;
+
+    // Image position relative to frame center (in CSS px)
+    const cx = frameX + frameW / 2 + imgOffX;
+    const cy = frameY + frameH / 2 + imgOffY;
+
+    // In output canvas coords, frame center = (CROP_W/2, CROP_H/2)
+    const ocx = CROP_W / 2 + (imgOffX) * scaleToOut;
+    const ocy = CROP_H / 2 + (imgOffY) * scaleToOut;
+
+    const dw = img.naturalWidth  * imgScale * scaleToOut;
+    const dh = img.naturalHeight * imgScale * scaleToOut;
+
+    octx.drawImage(img, ocx - dw/2, ocy - dh/2, dw, dh);
+
+    out.toBlob(blob => {
+      try {
+        // Store cropped blob as data URL for publish screen
+        const reader = new FileReader();
+        reader.onload = evt => {
+          sessionStorage.setItem('im_cropped_image', evt.target.result);
+          goTo('publish.html');
+        };
+        reader.readAsDataURL(blob);
+      } catch (err) {
+        showToast('Erreur export : ' + err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Valider →';
+      }
+    }, 'image/jpeg', 0.92);
+
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Valider →';
+  }
+}
+</script>
+</body>
+</html>
