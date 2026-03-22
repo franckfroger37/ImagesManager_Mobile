@@ -266,8 +266,9 @@ export default function PublishScreen({ route, navigation }) {
                 placeholderTextColor="#9ca3af"
               />
               <Text style={styles.euroSign}>€</Text>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.actionBtnBlue, postActioning && styles.actionBtnDisabled]}
+            </View>
+            <TouchableOpacity
+                style={[styles.actionBtn, styles.actionBtnBlue, postActioning && styles.actionBtnDisabled, {alignSelf: 'stretch', marginTop: 8}]}
                 onPress={handleCorrectPrice}
                 disabled={postActioning}
               >
@@ -275,7 +276,6 @@ export default function PublishScreen({ route, navigation }) {
                   ? <ActivityIndicator size="small" color="#fff" />
                   : <Text style={styles.actionBtnText}>Mettre à jour</Text>}
               </TouchableOpacity>
-            </View>
 
             <View style={styles.divider} />
 
