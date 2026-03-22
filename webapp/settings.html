@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#2563eb">
-  <title>Paramètres — Images Manager</title>
+  <title>ParamÃ¨tres â Images Manager V2</title>
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
@@ -12,9 +12,9 @@
 
   <!-- Header -->
   <header class="header">
-    <button class="icon-btn" id="btnBack" title="Retour">←</button>
-    <h1>Paramètres</h1>
-    <button class="icon-btn" id="btnSave" title="Enregistrer">💾</button>
+    <button class="icon-btn" id="btnBack" title="Retour">â</button>
+    <h1>ParamÃ¨tres</h1>
+    <button class="icon-btn" id="btnSave" title="Enregistrer">ð¾</button>
   </header>
 
   <!-- Scrollable content -->
@@ -42,13 +42,13 @@
         <input type="password" id="wcSecret" placeholder="cs_xxxxxxxxxxxxxxxx"
                autocomplete="off" autocorrect="off" spellcheck="false">
         <span class="hint">
-          WooCommerce → Réglages → Avancé → API REST → Ajouter une clé
+          WooCommerce â RÃ©glages â AvancÃ© â API REST â Ajouter une clÃ©
         </span>
       </div>
     </div>
 
     <!-- WordPress section -->
-    <p class="section-title">API WordPress (upload médias)</p>
+    <p class="section-title">API WordPress (upload mÃ©dias)</p>
 
     <div class="card" style="margin-bottom:16px;">
       <div class="form-group">
@@ -62,13 +62,13 @@
         <input type="password" id="wpPass" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx"
                autocomplete="off" autocorrect="off" spellcheck="false">
         <span class="hint">
-          WordPress → Votre profil → Mots de passe d'application → Ajouter
+          WordPress â Votre profil â Mots de passe d'application â Ajouter
         </span>
       </div>
     </div>
 
     <!-- Test button -->
-    <button class="btn btn-outline btn-full" id="btnTest">🔌 Tester la connexion</button>
+    <button class="btn btn-outline btn-full" id="btnTest">ð Tester la connexion</button>
 
     <div id="testResult" style="margin-top:12px; display:none;"></div>
 
@@ -76,10 +76,10 @@
 
     <!-- CORS info -->
     <div class="card" style="background: #eff6ff; border-color: #bfdbfe;">
-      <p style="font-weight:700; margin-bottom:6px; color: var(--primary);">ℹ️ Configuration CORS requise</p>
+      <p style="font-weight:700; margin-bottom:6px; color: var(--primary);">â¹ï¸ Configuration CORS requise</p>
       <p style="font-size:14px; color:var(--muted); line-height:1.5;">
         Pour que l'application puisse appeler l'API depuis un navigateur mobile,
-        votre site WordPress doit autoriser les requêtes CORS.<br><br>
+        votre site WordPress doit autoriser les requÃªtes CORS.<br><br>
         Installez le plugin <strong>WP CORS</strong> ou
         <strong>CORS Everywhere for WordPress</strong> et autorisez toutes les origines,
         ou ajoutez dans <code>functions.php</code> :
@@ -100,7 +100,7 @@
     <div style="height:16px;"></div>
 
     <!-- Save button -->
-    <button class="btn btn-primary btn-full" id="btnSaveBottom">Enregistrer les paramètres</button>
+    <button class="btn btn-primary btn-full" id="btnSaveBottom">Enregistrer les paramÃ¨tres</button>
 
   </main>
 </div>
@@ -146,7 +146,7 @@
 
       saveSettings({ wcUrl, wcKey, wcSecret, wpUser, wpPass });
       sessionStorage.removeItem('im_cats'); // clear category cache
-      showToast('Paramètres enregistrés ✓', 'success');
+      showToast('ParamÃ¨tres enregistrÃ©s â', 'success');
 
       // Redirect after short delay
       setTimeout(() => {
@@ -170,12 +170,12 @@
       const wcSecret = document.getElementById('wcSecret').value.trim();
 
       if (!wcUrl || !wcKey || !wcSecret) {
-        showToast('Renseignez l\'URL, la clé et le secret WooCommerce', 'warn');
+        showToast('Renseignez l\'URL, la clÃ© et le secret WooCommerce', 'warn');
         return;
       }
 
       btn.disabled = true;
-      btn.textContent = '⏳ Test en cours…';
+      btn.textContent = 'â³ Test en coursâ¦';
       result.style.display = 'none';
 
       try {
@@ -189,9 +189,9 @@
           result.style.display = 'block';
           result.innerHTML = `
             <div class="card" style="background:#f0fdf4; border-color:#86efac;">
-              <p style="color:var(--success); font-weight:600;">✅ Connexion réussie !</p>
+              <p style="color:var(--success); font-weight:600;">â Connexion rÃ©ussie !</p>
               <p style="font-size:13px; color:var(--muted); margin-top:4px;">
-                ${products.length} produit(s) trouvé(s). L'API fonctionne correctement.
+                ${products.length} produit(s) trouvÃ©(s). L'API fonctionne correctement.
               </p>
             </div>`;
         } else {
@@ -202,15 +202,15 @@
         result.style.display = 'block';
         result.innerHTML = `
           <div class="card" style="background:#fef2f2; border-color:#fca5a5;">
-            <p style="color:var(--danger); font-weight:600;">❌ Échec de connexion</p>
+            <p style="color:var(--danger); font-weight:600;">â Ãchec de connexion</p>
             <p style="font-size:13px; color:var(--muted); margin-top:4px;">${escHtml(err.message)}</p>
             <p style="font-size:12px; color:var(--muted); margin-top:6px;">
-              Vérifiez l'URL, les clés API, et la configuration CORS du serveur.
+              VÃ©rifiez l'URL, les clÃ©s API, et la configuration CORS du serveur.
             </p>
           </div>`;
       } finally {
         btn.disabled = false;
-        btn.textContent = '🔌 Tester la connexion';
+        btn.textContent = 'ð Tester la connexion';
       }
     };
   });
