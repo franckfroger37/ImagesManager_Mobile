@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
   <title>Recadrer — Images Manager</title>
   <link rel="stylesheet" href="css/app.css">
@@ -345,7 +345,7 @@ function touchMid(t1, t2) {
   return {
     x: ((t1.clientX + t2.clientX) / 2) - rect.left,
     y: ((t1.clientY + t2.clientY) / 2) - rect.top
-  };
+	};
 }
 
 function onTouchStart(e) {
