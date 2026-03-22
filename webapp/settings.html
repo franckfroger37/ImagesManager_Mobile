@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb">
+  <title>Paramètres — Images Manager</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="screen">
+
+  <!-- Header -->
+  <header class="header">
+    <button class="icon-btn" id="btnBack" title="Retour">←</button>
+    <h1>Paramètres</h1>
+    <button class="icon-btn" id="btnSave" title="Enregistrer">💾</button>
+  </header>
+
+  <!-- Scrollable content -->
+  <main class="content">
+
+    <!-- WooCommerce section -->
+    <p class="section-title">API WooCommerce</p>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="form-group">
+        <label for="wcUrl">URL du site WordPress</label>
+        <input type="url" id="wcUrl" placeholder="https://monsite.com"
+               autocomplete="url" inputmode="url">
+        <span class="hint">Sans slash final. Exemple : https://monsite.com</span>
+      </div>
+
+      <div class="form-group">
+        <label for="wcKey">Consumer Key</label>
+        <input type="text" id="wcKey" placeholder="ck_xxxxxxxxxxxxxxxx"
+               autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+
+      <div class="form-group" style="margin-bottom:0;">
+        <label for="wcSecret">Consumer Secret</label>
+        <input type="password" id="wcSecret" placeholder="cs_xxxxxxxxxxxxxxxx"
+               autocomplete="off" autocorrect="off" spellcheck="false">
+        <span class="hint">
+          WooCommerce → Réglages → Avancé → API REST → Ajouter une clé
+        </span>
+      </div>
+    </div>
+
+    <!-- WordPress section -->
+    <p class="section-title">API WordPress (upload médias)</p>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="form-group">
+        <label for="wpUser">Nom d'utilisateur WordPress</label>
+        <input type="text" id="wpUser" placeholder="admin"
+               autocomplete="username" autocorrect="off" spellcheck="false">
+      </div>
+
+      <div class="form-group" style="margin-bottom:0;">
+        <label for="wpPass">Mot de passe d'application</label>
+        <input type="password" id="wpPass" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx"
+               autocomplete="off" autocorrect="off" spellcheck="false">
+        <span class="hint">
+          WordPress → Votre profil → Mots de passe d'application → Ajouter
+        </span>
+      </div>
+    </div>
+
+    <!-- Test button -->
+    <button class="btn btn-outline btn-full" id="btnTest">🔌 Tester la connexion</button>
+
+    <div id="testResult" style="margin-top:12px; display:none;"></div>
+
+    <div class="divider"></div>
+
+    <!-- CORS info -->
+    <div class="card" style="background: #eff6ff; border-color: #bfdbfe;">
+      <p style="font-weight:700; margin-bottom:6px; color: var(--primary);">ℹ️ Configuration CORS requise</p>
+      <p style="font-size:14px; color:var(--muted); line-height:1.5;">
+        Pour que l'application puisse appeler l'API depuis un navigateur mobile,
+        votre site WordPress doit autoriser les requêtes CORS.<br><br>
+        Installez le plugin <strong>WP CORS</strong> ou
+        <strong>CORS Everywhere for WordPress</strong> et autorisez toutes les origines,
+        ou ajoutez dans <code>functions.php</code> :
+      </p>
+      <pre style="background:#dbeafe; border-radius:8px; padding:10px; font-size:12px; margin-top:8px; overflow-x:auto; white-space:pre-wrap;">add_action('rest_api_init', function() {
+  remove_filter('rest_pre_serve_request',
+    'rest_send_cors_headers');
+  add_filter('rest_pre_serve_request',
+    function($value) {
+      header('Access-Control-Allow-Origin: *');
+      header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+      header('Access-Control-Allow-Headers: Authorization, Content-Type');
+      return $value;
+    });
+}, 15);</pre>
+    </div>
+
+    <div style="height:16px;"></div>
+
+    <!-- Save button -->
+    <button class="btn btn-primary btn-full" id="btnSaveBottom">Enregistrer les paramètres</button>
+
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/api.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Load existing settings
+    const s = getSettings();
+    if (s.wcUrl)    document.getElementById('wcUrl').value    = s.wcUrl;
+    if (s.wcKey)    document.getElementById('wcKey').value    = s.wcKey;
+    if (s.wcSecret) document.getElementById('wcSecret').value = s.wcSecret;
+    if (s.wpUser)   document.getElementById('wpUser').value   = s.wpUser;
+    if (s.wpPass)   document.getElementById('wpPass').value   = s.wpPass;
+
+    // Back button
+    document.getElementById('btnBack').onclick = () => {
+      const params = new URLSearchParams(location.search);
+      const redirect = params.get('redirect');
+      if (redirect) location.href = redirect;
+      else history.back();
+    };
+
+    // Save buttons
+    const doSave = () => {
+      const wcUrl    = document.getElementById('wcUrl').value.trim().replace(/\/$/, '');
+      const wcKey    = document.getElementById('wcKey').value.trim();
+      const wcSecret = document.getElementById('wcSecret').value.trim();
+      const wpUser   = document.getElementById('wpUser').value.trim();
+      const wpPass   = document.getElementById('wpPass').value.trim();
+
+      if (!wcUrl || !wcKey || !wcSecret || !wpUser || !wpPass) {
+        showToast('Tous les champs sont obligatoires', 'error');
+        return;
+      }
+
+      if (!wcUrl.startsWith('http')) {
+        showToast('L\'URL doit commencer par https://', 'warn');
+        return;
+      }
+
+      saveSettings({ wcUrl, wcKey, wcSecret, wpUser, wpPass });
+      sessionStorage.removeItem('im_cats'); // clear category cache
+      showToast('Paramètres enregistrés ✓', 'success');
+
+      // Redirect after short delay
+      setTimeout(() => {
+        const params = new URLSearchParams(location.search);
+        const redirect = params.get('redirect');
+        if (redirect) location.href = redirect;
+        else goTo('index.html');
+      }, 800);
+    };
+
+    document.getElementById('btnSave').onclick = doSave;
+    document.getElementById('btnSaveBottom').onclick = doSave;
+
+    // Test connection
+    document.getElementById('btnTest').onclick = async () => {
+      const btn = document.getElementById('btnTest');
+      const result = document.getElementById('testResult');
+
+      const wcUrl    = document.getElementById('wcUrl').value.trim().replace(/\/$/, '');
+      const wcKey    = document.getElementById('wcKey').value.trim();
+      const wcSecret = document.getElementById('wcSecret').value.trim();
+
+      if (!wcUrl || !wcKey || !wcSecret) {
+        showToast('Renseignez l\'URL, la clé et le secret WooCommerce', 'warn');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Test en cours…';
+      result.style.display = 'none';
+
+      try {
+        const auth = 'Basic ' + btoa(wcKey + ':' + wcSecret);
+        const res = await fetch(wcUrl + '/wp-json/wc/v3/products?per_page=1', {
+          headers: { 'Authorization': auth }
+        });
+
+        if (res.ok) {
+          const products = await res.json();
+          result.style.display = 'block';
+          result.innerHTML = `
+            <div class="card" style="background:#f0fdf4; border-color:#86efac;">
+              <p style="color:var(--success); font-weight:600;">✅ Connexion réussie !</p>
+              <p style="font-size:13px; color:var(--muted); margin-top:4px;">
+                ${products.length} produit(s) trouvé(s). L'API fonctionne correctement.
+              </p>
+            </div>`;
+        } else {
+          const j = await res.json().catch(() => ({}));
+          throw new Error(j.message || 'HTTP ' + res.status);
+        }
+      } catch (err) {
+        result.style.display = 'block';
+        result.innerHTML = `
+          <div class="card" style="background:#fef2f2; border-color:#fca5a5;">
+            <p style="color:var(--danger); font-weight:600;">❌ Échec de connexion</p>
+            <p style="font-size:13px; color:var(--muted); margin-top:4px;">${escHtml(err.message)}</p>
+            <p style="font-size:12px; color:var(--muted); margin-top:6px;">
+              Vérifiez l'URL, les clés API, et la configuration CORS du serveur.
+            </p>
+          </div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔌 Tester la connexion';
+      }
+    };
+  });
+</script>
+</body>
+</html>
