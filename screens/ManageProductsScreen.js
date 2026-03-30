@@ -1,4 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 're
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [searching, setSearching] = useState(false);act';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, Image, ActivityIndicator, SafeAreaView, Modal, Linking,
@@ -8,6 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { getSettings } from '../services/storageService';
 import {
   fetchRecentProducts,
+  searchProducts,
+  setOutOfStock,
   updateProductPrice,
   unpublishProduct,
   republishProduct,
@@ -108,6 +113,35 @@ export default function ManageProductsScreen({ navigation }) {
     } finally { setActioning(false); }
   };
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    try {
+      const results = await searchProducts(searchQuery.trim(), settings);
+      setSearchResults(results);
+    } catch (e) {
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSetOutOfStock = async () => {
+    setActioning(true);
+    try {
+      await setOutOfStock(selected.id, settings);
+      removeLocalProduct(selected.id);
+      if (searchResults !== null) {
+        setSearchResults(prev => prev.filter(p => p.id !== selected.id));
+      }
+      closePanel();
+    } catch (e) {
+      setActionMsg({ ok: false, msg: `❌ ${e.message}` });
+    } finally {
+      setActioning(false);
+    }
+  };
+
   const handleDelete = async () => {
     setActioning(true);
     try {
@@ -175,6 +209,46 @@ export default function ManageProductsScreen({ navigation }) {
         </View>
       )}
 
+            {/* Barre de recherche */}
+      <View style={styles.searchRow}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="🔍 Rechercher par nom..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          onSubmitEditing={handleSearch}
+          returnKeyType="search"
+        />
+        <TouchableOpacity style={styles.searchBtn} onPress={handleSearch} disabled={searching}>
+          {searching
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Text style={styles.searchBtnText}>Chercher</Text>
+          }
+        </TouchableOpacity>
+      </View>
+      {searchResults !== null && (
+        <View style={styles.searchResultsBox}>
+          <View style={styles.searchResultsHeader}>
+            <Text style={styles.searchResultsTitle}>
+              {searchResults.length === 0 ? 'Aucun résultat' : `${searchResults.length} résultat(s)`}
+            </Text>
+            <TouchableOpacity onPress={() => setSearchResults(null)}>
+              <Text style={styles.searchClearBtn}>✕ Effacer</Text>
+            </TouchableOpacity>
+          </View>
+          {searchResults.map(product => (
+            <TouchableOpacity key={product.id} style={styles.productRow} onPress={() => openPanel(product)}>
+              <View style={styles.productInfo}>
+                <Text style={styles.productName} numberOfLines={1}>{product.name}</Text>
+                <Text style={styles.productMeta}>#{product.id} · {product.price}€</Text>
+              </View>
+              <Text style={[styles.statusBadge, product.stock_status === 'outofstock' ? styles.statusOut : styles.statusIn]}>
+                {product.stock_status === 'outofstock' ? 'Rupture' : 'En stock'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
       <ScrollView style={styles.list}>
         {products.map((p) => <ProductRow key={p.id} product={p} />)}
       </ScrollView>
@@ -264,6 +338,16 @@ export default function ManageProductsScreen({ navigation }) {
             )}
 
             <TouchableOpacity
+              style={[styles.actionBtn, styles.outOfStockBtn, actioning && styles.actionBtnDisabled]}
+              onPress={handleSetOutOfStock}
+              disabled={actioning}
+            >
+              {actioning
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={styles.actionBtnText}>📦 Rupture de stock</Text>
+              }
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[styles.bigAction, styles.bigActionDanger, actioning && styles.disabled]}
               onPress={handleDelete}
               disabled={actioning}
@@ -332,4 +416,17 @@ const styles = StyleSheet.create({
   bigActionTitle: { fontSize: 14, fontWeight: '600' },
   bigActionSub:   { fontSize: 12, color: '#9ca3af', marginTop: 2 },
   disabled:     { opacity: 0.5 },
+
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, paddingBottom: 6 },
+  searchInput: { flex: 1, backgroundColor: '#f3f4f6', borderRadius: 10, padding: 10, fontSize: 15, borderWidth: 1, borderColor: '#e5e7eb' },
+  searchBtn: { backgroundColor: '#6366f1', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  searchBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  searchResultsBox: { marginHorizontal: 12, marginBottom: 8, backgroundColor: '#f9fafb', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden' },
+  searchResultsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10, backgroundColor: '#ede9fe' },
+  searchResultsTitle: { fontWeight: '700', color: '#4f46e5', fontSize: 13 },
+  searchClearBtn: { color: '#6b7280', fontSize: 13, fontWeight: '600' },
+  outOfStockBtn: { backgroundColor: '#f59e0b' },
+  statusBadge: { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  statusIn: { backgroundColor: '#d1fae5', color: '#065f46' },
+  statusOut: { backgroundColor: '#fee2e2', color: '#991b1b' },
 });
