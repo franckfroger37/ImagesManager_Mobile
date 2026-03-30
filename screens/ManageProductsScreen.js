@@ -17,7 +17,7 @@ import {
 } from '../services/woocommerceService';
 
 const STATUS_LABEL = {
-  publish: { label: 'PubliÃ©',    bg: '#dcfce7', text: '#15803d', icon: 'eye-outline' },
+  publish: { label: 'PubliÃÂ©',    bg: '#dcfce7', text: '#15803d', icon: 'eye-outline' },
   draft:   { label: 'Brouillon', bg: '#fef9c3', text: '#a16207', icon: 'eye-off-outline' },
   pending: { label: 'En attente', bg: '#e0f2fe', text: '#0369a1', icon: 'time-outline' },
 };
@@ -84,14 +84,14 @@ export default function ManageProductsScreen({ navigation }) {
 
   const handleCorrectPrice = async () => {
     const p = parseFloat(correctPrice);
-    if (!p || p <= 0) { setActionMsg({ ok: false, msg: 'â ï¸ Prix invalide.' }); return; }
+    if (!p || p <= 0) { setActionMsg({ ok: false, msg: 'Ã¢ÂÂ Ã¯Â¸Â Prix invalide.' }); return; }
     setActioning(true);
     try {
       await updateProductPrice(selected.id, p, settings);
       updateLocalProduct(selected.id, { price: p.toFixed(2) });
-      setActionMsg({ ok: true, msg: `â Prix mis Ã  jour : ${p.toFixed(2)} â¬` });
+      setActionMsg({ ok: true, msg: `Ã¢ÂÂ Prix mis ÃÂ  jour : ${p.toFixed(2)} Ã¢ÂÂ¬` });
     } catch (e) {
-      setActionMsg({ ok: false, msg: `â ${e.message}` });
+      setActionMsg({ ok: false, msg: `Ã¢ÂÂ ${e.message}` });
     } finally { setActioning(false); }
   };
 
@@ -102,14 +102,14 @@ export default function ManageProductsScreen({ navigation }) {
       if (isPublished) {
         await unpublishProduct(selected.id, settings);
         updateLocalProduct(selected.id, { status: 'draft' });
-        setActionMsg({ ok: true, msg: 'â Produit dÃ©publiÃ©.' });
+        setActionMsg({ ok: true, msg: 'Ã¢ÂÂ Produit dÃÂ©publiÃÂ©.' });
       } else {
         await republishProduct(selected.id, settings);
         updateLocalProduct(selected.id, { status: 'publish' });
-        setActionMsg({ ok: true, msg: 'â Produit republiÃ© â visible dans la boutique.' });
+        setActionMsg({ ok: true, msg: 'Ã¢ÂÂ Produit republiÃÂ© Ã¢ÂÂ visible dans la boutique.' });
       }
     } catch (e) {
-      setActionMsg({ ok: false, msg: `â ${e.message}` });
+      setActionMsg({ ok: false, msg: `Ã¢ÂÂ ${e.message}` });
     } finally { setActioning(false); }
   };
 
@@ -121,7 +121,7 @@ export default function ManageProductsScreen({ navigation }) {
       setSearchResults(results);
     } catch (e) {
       setSearchResults([]);
-      setActionMsg({ ok: false, msg: '❌ Erreur recherche: ' + e.message });
+      setActionMsg({ ok: false, msg: 'â Erreur recherche: ' + e.message });
     } finally {
       setSearching(false);
     }
@@ -137,7 +137,7 @@ export default function ManageProductsScreen({ navigation }) {
       }
       closePanel();
     } catch (e) {
-      setActionMsg({ ok: false, msg: `â ${e.message}` });
+      setActionMsg({ ok: false, msg: `Ã¢ÂÂ ${e.message}` });
     } finally {
       setActioning(false);
     }
@@ -151,7 +151,7 @@ export default function ManageProductsScreen({ navigation }) {
 
       closePanel();
       setActioning(false);    } catch (e) {
-      setActionMsg({ ok: false, msg: `â ${e.message}` });
+      setActionMsg({ ok: false, msg: `Ã¢ÂÂ ${e.message}` });
       setActioning(false);
     }
   };
@@ -172,7 +172,7 @@ export default function ManageProductsScreen({ navigation }) {
         }
         <View style={styles.rowInfo}>
           <Text style={styles.rowName} numberOfLines={1}>{product.name}</Text>
-          <Text style={styles.rowPrice}>{parseFloat(product.price).toFixed(2)} â¬</Text>
+          <Text style={styles.rowPrice}>{parseFloat(product.price).toFixed(2)} Ã¢ÂÂ¬</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
           <Ionicons name={st.icon} size={12} color={st.text} />
@@ -206,7 +206,7 @@ export default function ManageProductsScreen({ navigation }) {
       {!loading && !error && products.length === 0 && (
         <View style={styles.emptyBox}>
           <Ionicons name="cube-outline" size={40} color="#d1d5db" />
-          <Text style={styles.emptyText}>Aucun produit trouvÃ©</Text>
+          <Text style={styles.emptyText}>Aucun produit trouvÃÂ©</Text>
         </View>
       )}
 
@@ -243,7 +243,7 @@ export default function ManageProductsScreen({ navigation }) {
             <TouchableOpacity key={product.id} style={styles.productRow} onPress={() => openPanel(product)}>
               <View style={styles.productInfo}>
                 <Text style={styles.productName} numberOfLines={1}>{product.name}</Text>
-                <Text style={styles.productMeta}>{'#' + product.id + ' - ' + product.price + 'EUR'}</Text>
+                <Text style={styles.productMeta}>{'#' + product.id + ' - ' + product.price + '\u20AC'}</Text>
               </View>
               <Text style={[styles.statusBadge, product.stock_status === 'outofstock' ? styles.statusOut : styles.statusIn]}>
                 {product.stock_status === 'outofstock' ? 'Rupture' : 'En stock'}
@@ -288,8 +288,8 @@ export default function ManageProductsScreen({ navigation }) {
               </View>
             )}
 
-            {/* Corriger le prix â input compact + bouton bien visible */}
-            <Text style={styles.actionLabel}>âï¸ Corriger le prix</Text>
+            {/* Corriger le prix Ã¢ÂÂ input compact + bouton bien visible */}
+            <Text style={styles.actionLabel}>Ã¢ÂÂÃ¯Â¸Â Corriger le prix</Text>
             <View style={styles.priceRow}>
               <TextInput
                 style={styles.priceInput}
@@ -299,7 +299,7 @@ export default function ManageProductsScreen({ navigation }) {
                 placeholder="0.00"
                 placeholderTextColor="#9ca3af"
               />
-              <Text style={styles.euroSign}>â¬</Text>
+              <Text style={styles.euroSign}>Ã¢ÂÂ¬</Text>
               <TouchableOpacity
                 style={[styles.updateBtn, actioning && styles.disabled]}
                 onPress={handleCorrectPrice}
@@ -307,7 +307,7 @@ export default function ManageProductsScreen({ navigation }) {
               >
                 {actioning
                   ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.updateBtnText}>Mettre Ã  jour</Text>}
+                  : <Text style={styles.updateBtnText}>Mettre ÃÂ  jour</Text>}
               </TouchableOpacity>
             </View>
 
@@ -328,12 +328,12 @@ export default function ManageProductsScreen({ navigation }) {
                   <Text style={[styles.bigActionTitle, {
                     color: selected.status === 'publish' ? '#d97706' : '#16a34a'
                   }]}>
-                    {selected.status === 'publish' ? 'ð« DÃ©publier' : 'â Republier'}
+                    {selected.status === 'publish' ? 'Ã°ÂÂÂ« DÃÂ©publier' : 'Ã¢ÂÂ Republier'}
                   </Text>
                   <Text style={styles.bigActionSub}>
                     {selected.status === 'publish'
-                      ? 'Passe en brouillon â invisible dans la boutique'
-                      : 'Remet en ligne â visible dans la boutique'}
+                      ? 'Passe en brouillon Ã¢ÂÂ invisible dans la boutique'
+                      : 'Remet en ligne Ã¢ÂÂ visible dans la boutique'}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#d1d5db" />
@@ -357,7 +357,7 @@ export default function ManageProductsScreen({ navigation }) {
             >
               <Ionicons name="trash-outline" size={22} color="#dc2626" />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.bigActionTitle, { color: '#dc2626' }]}>ðï¸ Supprimer dÃ©finitivement</Text>
+                <Text style={[styles.bigActionTitle, { color: '#dc2626' }]}>Ã°ÂÂÂÃ¯Â¸Â Supprimer dÃÂ©finitivement</Text>
                 <Text style={styles.bigActionSub}>Supprime le produit et son image</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#fca5a5" />
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   actionMsgTextErr: { color: '#be123c' },
   actionLabel:  { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
 
-  // Ligne prix : input compact Ã  gauche, bouton bien visible Ã  droite
+  // Ligne prix : input compact ÃÂ  gauche, bouton bien visible ÃÂ  droite
   priceRow:     { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   priceInput:   { width: 90, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 8, fontSize: 16, fontWeight: '700', color: '#111827', textAlign: 'center' },
   euroSign:     { fontSize: 16, color: '#6b7280', fontWeight: '600' },
