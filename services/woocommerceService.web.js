@@ -263,3 +263,27 @@ export const republishProduct = async (productId, settings) => {
   }
   return true;
 };
+
+export const searchProducts = async (query, settings) => {
+  const { siteUrl, consumerKey, consumerSecret } = settings;
+  const auth = btoa(`${consumerKey}:${consumerSecret}`);
+  const url = `${siteUrl}/wp-json/wc/v3/products?search=${encodeURIComponent(query)}&per_page=20&status=any`;
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) throw new Error(`Erreur recherche: ${response.status}`);
+  return await response.json();
+};
+
+export const setOutOfStock = async (productId, settings) => {
+  const { siteUrl, consumerKey, consumerSecret } = settings;
+  const auth = btoa(`${consumerKey}:${consumerSecret}`);
+  const url = `${siteUrl}/wp-json/wc/v3/products/${productId}`;
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ stock_status: 'outofstock', manage_stock: true, stock_quantity: 0 }),
+  });
+  if (!response.ok) throw new Error(`Erreur rupture de stock: ${response.status}`);
+  return await response.json();
+};
