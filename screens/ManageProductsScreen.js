@@ -1,7 +1,4 @@
-import React, { useState, useCallback } from 're
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState(null);
-  const [searching, setSearching] = useState(false);act';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, Image, ActivityIndicator, SafeAreaView, Modal, Linking,
@@ -36,6 +33,9 @@ export default function ManageProductsScreen({ navigation }) {
   const [correctPrice, setCorrectPrice] = useState('');
   const [actioning,    setActioning]    = useState(false);
   const [actionMsg,    setActionMsg]    = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [searching, setSearching] = useState(false);
 
   const loadProducts = useCallback(async (s) => {
     setLoading(true);
@@ -213,7 +213,7 @@ export default function ManageProductsScreen({ navigation }) {
       <View style={styles.searchRow}>
         <TextInput
           style={styles.searchInput}
-          placeholder="🔍 Rechercher par nom..."
+          placeholder="Rechercher par nom..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           onSubmitEditing={handleSearch}
@@ -230,17 +230,19 @@ export default function ManageProductsScreen({ navigation }) {
         <View style={styles.searchResultsBox}>
           <View style={styles.searchResultsHeader}>
             <Text style={styles.searchResultsTitle}>
-              {searchResults.length === 0 ? 'Aucun résultat' : `${searchResults.length} résultat(s)`}
+              {searchResults.length === 0
+                ? 'Aucun resultat'
+                : searchResults.length + ' resultat(s)'}
             </Text>
             <TouchableOpacity onPress={() => setSearchResults(null)}>
-              <Text style={styles.searchClearBtn}>✕ Effacer</Text>
+              <Text style={styles.searchClearBtn}>Effacer</Text>
             </TouchableOpacity>
           </View>
           {searchResults.map(product => (
             <TouchableOpacity key={product.id} style={styles.productRow} onPress={() => openPanel(product)}>
               <View style={styles.productInfo}>
                 <Text style={styles.productName} numberOfLines={1}>{product.name}</Text>
-                <Text style={styles.productMeta}>#{product.id} · {product.price}€</Text>
+                <Text style={styles.productMeta}>{'#' + product.id + ' - ' + product.price + 'EUR'}</Text>
               </View>
               <Text style={[styles.statusBadge, product.stock_status === 'outofstock' ? styles.statusOut : styles.statusIn]}>
                 {product.stock_status === 'outofstock' ? 'Rupture' : 'En stock'}
@@ -344,7 +346,7 @@ export default function ManageProductsScreen({ navigation }) {
             >
               {actioning
                 ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.actionBtnText}>📦 Rupture de stock</Text>
+                : <Text style={styles.actionBtnText}>Rupture de stock</Text>
               }
             </TouchableOpacity>
             <TouchableOpacity
@@ -426,6 +428,7 @@ const styles = StyleSheet.create({
   searchResultsTitle: { fontWeight: '700', color: '#4f46e5', fontSize: 13 },
   searchClearBtn: { color: '#6b7280', fontSize: 13, fontWeight: '600' },
   outOfStockBtn: { backgroundColor: '#f59e0b' },
+  actionBtnDisabled: { opacity: 0.5 },
   statusBadge: { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   statusIn: { backgroundColor: '#d1fae5', color: '#065f46' },
   statusOut: { backgroundColor: '#fee2e2', color: '#991b1b' },
