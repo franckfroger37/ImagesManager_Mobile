@@ -322,31 +322,16 @@ export default function ManageProductsScreen({ navigation }) {
 
             <View style={styles.divider} />
 
-            {/* Publier / Dépublier */}
+                        {/* Dépublier / Republier */}
             {selected && (
               <TouchableOpacity
-                style={[styles.bigAction, actioning && styles.disabled]}
+                style={[styles.actionBtn, styles.actionBtnOrange, actioning && styles.actionBtnDisabled]}
                 onPress={handleTogglePublish}
                 disabled={actioning}
               >
-                <Ionicons
-                  name={selected.status === 'publish' ? 'eye-off-outline' : 'eye-outline'}
-                  size={22}
-                  color={selected.status === 'publish' ? '#d97706' : '#16a34a'}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.bigActionTitle, {
-                    color: selected.status === 'publish' ? '#d97706' : '#16a34a'
-                  }]}>
-                    {selected.status === 'publish' ? '🚫 Dépublier' : '✅ Republier'}
-                  </Text>
-                  <Text style={styles.bigActionSub}>
-                    {selected.status === 'publish'
-                      ? 'Passe en brouillon — invisible dans la boutique'
-                      : 'Remet en ligne — visible dans la boutique'}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#d1d5db" />
+                {actioning
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={styles.actionBtnText}>{selected.status === 'publish' ? 'Dépublier' : 'Republier'}</Text>}
               </TouchableOpacity>
             )}
 
@@ -361,17 +346,14 @@ export default function ManageProductsScreen({ navigation }) {
             : <Text style={styles.actionBtnText}>Rupture de stock</Text>
           }
         </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.bigAction, styles.bigActionDanger, actioning && styles.disabled]}
+                        <TouchableOpacity
+              style={[styles.actionBtn, styles.actionBtnRed, actioning && styles.actionBtnDisabled]}
               onPress={handleDelete}
               disabled={actioning}
             >
-              <Ionicons name="trash-outline" size={22} color="#dc2626" />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.bigActionTitle, { color: '#dc2626' }]}>🗑️ Supprimer définitivement</Text>
-                <Text style={styles.bigActionSub}>Supprime le produit et son image</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#fca5a5" />
+              {actioning
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={styles.actionBtnText}>Supprimer définitivement</Text>}
             </TouchableOpacity>
 
           </View>
@@ -438,6 +420,8 @@ const styles = StyleSheet.create({
   searchResultsTitle: { fontWeight: '700', color: '#4f46e5', fontSize: 13 },
   searchClearBtn: { color: '#6b7280', fontSize: 13, fontWeight: '600' },
   outOfStockBtn: { backgroundColor: '#f59e0b' },
+  actionBtnOrange:   { backgroundColor: '#f59e0b' },
+  actionBtnRed:      { backgroundColor: '#ef4444' },
   actionBtnDisabled: { opacity: 0.5 },
   statusBadge: { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   statusIn: { backgroundColor: '#d1fae5', color: '#065f46' },
