@@ -266,16 +266,17 @@ export default function PublishScreen({ route, navigation }) {
                 placeholderTextColor="#9ca3af"
               />
               <Text style={styles.euroSign}>€</Text>
-            </View>
-            <TouchableOpacity
-                style={[styles.actionBtn, styles.actionBtnBlue, postActioning && styles.actionBtnDisabled, {alignSelf: 'stretch', marginTop: 8}]}
+                          <TouchableOpacity
+                style={[styles.actionBtn, styles.actionBtnBlue, postActioning && styles.actionBtnDisabled]}
                 onPress={handleCorrectPrice}
                 disabled={postActioning}
               >
                 {postActioning
                   ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.actionBtnText}>Mettre à jour</Text>}
+                  : <Text style={styles.actionBtnText}>Mettre à jour</Text>
+                }
               </TouchableOpacity>
+            </View>
 
             <View style={styles.divider} />
 
@@ -291,32 +292,28 @@ export default function PublishScreen({ route, navigation }) {
             )}
 
             {/* Dépublier */}
-            <TouchableOpacity
-              style={[styles.actionRow, postActioning && styles.actionBtnDisabled]}
-              onPress={handleUnpublish}
-              disabled={postActioning}
-            >
-              <Ionicons name="eye-off-outline" size={20} color="#d97706" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.actionRowTitle}>🚫 Dépublier</Text>
-                <Text style={styles.actionRowSub}>Passe en brouillon — invisible dans la boutique</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#d97706" />
-            </TouchableOpacity>
+                    <TouchableOpacity
+          style={[styles.actionBtn, styles.actionBtnOrange, postActioning && styles.actionBtnDisabled]}
+          onPress={handleUnpublish}
+          disabled={postActioning}
+        >
+          {postActioning
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Text style={styles.actionBtnText}>Dépublier</Text>
+          }
+        </TouchableOpacity>
 
             {/* Supprimer et recommencer */}
-            <TouchableOpacity
-              style={[styles.actionRow, styles.actionRowDanger, postActioning && styles.actionBtnDisabled]}
-              onPress={handleDeleteAndRestart}
-              disabled={postActioning}
-            >
-              <Ionicons name="trash-outline" size={20} color="#dc2626" />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.actionRowTitle, { color: '#dc2626' }]}>🗑️ Supprimer et recommencer</Text>
-                <Text style={styles.actionRowSub}>Supprime le produit · retour au recadrage</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#dc2626" />
-            </TouchableOpacity>
+                    <TouchableOpacity
+          style={[styles.actionBtn, styles.actionBtnRed, postActioning && styles.actionBtnDisabled]}
+          onPress={handleDelete}
+          disabled={postActioning}
+        >
+          {postActioning
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Text style={styles.actionBtnText}>Supprimer définitivement</Text>
+          }
+        </TouchableOpacity>
 
             {/* Nouveau produit */}
             <TouchableOpacity style={styles.newProductBtn} onPress={() => navigation.navigate('Home')}>
@@ -404,7 +401,9 @@ const styles = StyleSheet.create({
   euroSign:       { fontSize: 18, color: '#6b7280', fontWeight: '600' },
   actionBtn:      { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
   actionBtnBlue:  { backgroundColor: '#2563eb' },
-  actionBtnDisabled: { opacity: 0.5 },
+  actionBtnOrange: { backgroundColor: '#f59e0b' },
+  actionBtnRed: { backgroundColor: '#ef4444' },
+    actionBtnDisabled: { opacity: 0.5 },
   actionBtnText:  { color: '#fff', fontWeight: '700', fontSize: 13 },
   postActionMsg:      { borderRadius: 8, padding: 10, marginBottom: 8, borderLeftWidth: 3 },
   postActionMsgOk:    { backgroundColor: '#f0fdf4', borderLeftColor: '#16a34a' },
