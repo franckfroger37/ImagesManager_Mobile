@@ -325,7 +325,7 @@ export default function ManageProductsScreen({ navigation }) {
                         {/* Dépublier / Republier */}
             {selected && (
               <TouchableOpacity
-                style={[styles.actionBtn, styles.actionBtnOrange, actioning && styles.actionBtnDisabled]}
+                style={[styles.actionBtn, styles.actionBtnSlate, actioning && styles.actionBtnDisabled]}
                 onPress={handleTogglePublish}
                 disabled={actioning}
               >
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   actionMsgTextErr: { color: '#be123c' },
   actionLabel:  { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
   priceRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  priceInput:   { flex: 1, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 10, fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  priceInput:   { width: 90, flexShrink: 1, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 10, fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
   euroSign:     { fontSize: 18, color: '#6b7280', fontWeight: '600' },
   actionBtn:    { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
   actionBtnBlue: { backgroundColor: '#2563eb' },
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   searchResultsTitle: { fontWeight: '700', color: '#4f46e5', fontSize: 13 },
   searchClearBtn: { color: '#6b7280', fontSize: 13, fontWeight: '600' },
   outOfStockBtn: { backgroundColor: '#f59e0b' },
-  actionBtnOrange:   { backgroundColor: '#f59e0b' },
+  actionBtnSlate:    { backgroundColor: '#64748b' },
   actionBtnRed:      { backgroundColor: '#ef4444' },
   actionBtnDisabled: { opacity: 0.5 },
   statusBadge: { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
