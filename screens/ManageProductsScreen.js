@@ -269,7 +269,7 @@ export default function ManageProductsScreen({ navigation }) {
 
             {/* En-tête du panneau */}
             <View style={styles.panelHeader}>
-              {selected?.images?.[0]?.src
+              {selected && selected.images && selected.images.length > 0
                 ? <Image source={{ uri: selected.images[0].src }} style={styles.panelThumb} />
                 : <View style={styles.panelThumbPlaceholder}><Icons name="image-outline" size={20} color="#9ca3af" /></View>}
               <View style={{ flex: 1 }}>
