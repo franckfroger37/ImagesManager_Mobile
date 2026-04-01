@@ -187,19 +187,6 @@ export default function ManageProductsScreen({ navigation }) {
     );
   };
 
-  // Miniature du produit sélectionné
-  const renderThumb = () => {
-    if (!selected || !selected.images || selected.images.length === 0) {
-      return (
-        <View style={styles.panelThumbPlaceholder}>
-          <Icons name="image-outline" size={20} color="#9ca3af" />
-        </View>
-      );
-    }
-    return <Image source={{ uri: selected.images[0].src }} style={styles.panelThumb} />;
-  };
-
-
   return (
     <SafeAreaView style={styles.container}>
 
@@ -282,7 +269,6 @@ export default function ManageProductsScreen({ navigation }) {
 
             {/* En-tête du panneau */}
             <View style={styles.panelHeader}>
-              {renderThumb()}
               <View style={{ flex: 1 }}>
                 <Text style={styles.panelTitle} numberOfLines={1}>{selected?.name}</Text>
                 <Text style={styles.panelSub}>ID #{selected?.id}</Text>
@@ -400,8 +386,6 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   panel:        { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 16, paddingBottom: 34, paddingTop: 8 },
   panelHeader:  { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
-  panelThumb:            { width: 52, height: 52, borderRadius: 6 },
-  panelThumbPlaceholder: { width: 52, height: 52, borderRadius: 6, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' },
   panelTitle:   { fontSize: 16, fontWeight: '700', color: '#111827' },
   panelSub:     { fontSize: 12, color: '#9ca3af', marginTop: 2 },
   panelHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
