@@ -17,7 +17,7 @@ import {
 } from '../services/woocommerceService';
 
 const STATUS_LABEL = {
-  publish: { label: 'PubliÃ©',    bg: '#dcfce7', text: '#15803d', icon: 'eye-outline' },
+  publish: { label: 'Publié',    bg: '#dcfce7', text: '#15803d', icon: 'eye-outline' },
   draft:   { label: 'Brouillon', bg: '#fef9c3', text: '#a16207', icon: 'eye-off-outline' },
   pending: { label: 'En attente', bg: '#e0f2fe', text: '#0369a1', icon: 'time-outline' },
 };
@@ -28,7 +28,7 @@ export default function ManageProductsScreen({ navigation }) {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
 
-  // Produit sÃ©lectionnÃ© pour le panneau d'actions
+  // Produit sélectionné pour le panneau d'actions
   const [selected,     setSelected]     = useState(null);
   const [showPanel,    setShowPanel]    = useState(false);
   const [correctPrice, setCorrectPrice] = useState('');
@@ -73,7 +73,7 @@ export default function ManageProductsScreen({ navigation }) {
     setActionMsg(null);
   };
 
-  // Met Ã  jour localement la liste aprÃ¨s une action
+  // Met à jour localement la liste après une action
   const updateLocalProduct = (id, changes) => {
     setProducts((prev) => prev.map((p) => p.id === id ? { ...p, ...changes } : p));
     setSelected((prev) => prev ? { ...prev, ...changes } : prev);
@@ -86,14 +86,14 @@ export default function ManageProductsScreen({ navigation }) {
 
   const handleCorrectPrice = async () => {
     const p = parseFloat(correctPrice);
-    if (!p || p <= 0) { setActionMsg({ ok: false, msg: 'â ï¸ Prix invalide.' }); return; }
+    if (!p || p <= 0) { setActionMsg({ ok: false, msg: '⚠️ Prix invalide.' }); return; }
     setActioning(true);
     try {
       await updateProductPrice(selected.id, p, settings);
       updateLocalProduct(selected.id, { price: p.toFixed(2) });
-      setActionMsg({ ok: true, msg: `â Prix mis Ã  jour : ${p.toFixed(2)} â¬` });
+      setActionMsg({ ok: true, msg: `✅ Prix mis à jour : ${p.toFixed(2)} €` });
     } catch (e) {
-      setActionMsg({ ok: false, msg: `â ${e.message}` });
+      setActionMsg({ ok: false, msg: `❌ ${e.message}` });
     } finally { setActioning(false); }
   };
 
@@ -104,14 +104,14 @@ export default function ManageProductsScreen({ navigation }) {
       if (isPublished) {
         await unpublishProduct(selected.id, settings);
         updateLocalProduct(selected.id, { status: 'draft' });
-        setActionMsg({ ok: true, msg: 'â Produit dÃ©publiÃ© â il n\'apparaÃ®t plus dans la boutique.' });
+        setActionMsg({ ok: true, msg: '✅ Produit dépublié — il n\'apparaît plus dans la boutique.' });
       } else {
         await republishProduct(selected.id, settings);
         updateLocalProduct(selected.id, { status: 'publish' });
-        setActionMsg({ ok: true, msg: 'â Produit republiÃ© â visible dans la boutique.' });
+        setActionMsg({ ok: true, msg: '✅ Produit republié — visible dans la boutique.' });
       }
     } catch (e) {
-      setActionMsg({ ok: false, msg: `â ${e.message}` });
+      setActionMsg({ ok: false, msg: `❌ ${e.message}` });
     } finally { setActioning(false); }
   };
 
@@ -123,7 +123,7 @@ export default function ManageProductsScreen({ navigation }) {
       setSearchResults(results);
     } catch (e) {
       setSearchResults([]);
-      setActionMsg({ ok: false, msg: 'â Erreur recherche: ' + e.message });
+      setActionMsg({ ok: false, msg: '❌ Erreur recherche: ' + e.message });
     } finally {
       setSearching(false);
     }
@@ -140,7 +140,7 @@ export default function ManageProductsScreen({ navigation }) {
       closePanel();
       setActioning(false);
     } catch (e) {
-      setActionMsg({ ok: false, msg: 'â ' + e.message });
+      setActionMsg({ ok: false, msg: '❌ ' + e.message });
     } finally {
       setActioning(false);
     }
@@ -154,7 +154,7 @@ export default function ManageProductsScreen({ navigation }) {
       closePanel();
       setActioning(false);
     } catch (e) {
-      setActionMsg({ ok: false, msg: `â ${e.message}` });
+      setActionMsg({ ok: false, msg: `❌ ${e.message}` });
       setActioning(false);
     }
   };
@@ -163,7 +163,7 @@ export default function ManageProductsScreen({ navigation }) {
     if (selected?.permalink) Linking.openURL(selected.permalink);
   };
 
-  // ââ Rendu d'un produit dans la liste ââââââââââââââââââââââââââââââââââââââââ
+  // ── Rendu d'un produit dans la liste ────────────────────────────────────────
   const ProductRow = ({ product }) => {
     const st = STATUS_LABEL[product.status] || STATUS_LABEL.draft;
     return (
@@ -176,7 +176,7 @@ export default function ManageProductsScreen({ navigation }) {
         }
         <View style={styles.rowInfo}>
           <Text style={styles.rowName} numberOfLines={1}>{product.name}</Text>
-          <Text style={styles.rowPrice}>{parseFloat(product.price).toFixed(2)} â¬</Text>
+          <Text style={styles.rowPrice}>{parseFloat(product.price).toFixed(2)} €</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
           <Ionicons name={st.icon} size={12} color={st.text} />
@@ -190,7 +190,7 @@ export default function ManageProductsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
 
-      {/* ââ En-tÃªte avec bouton refresh ââ */}
+      {/* ── En-tête avec bouton refresh ── */}
       <View style={styles.header}>
         <Text style={styles.headerCount}>
           {loading ? 'Chargement...' : `${products.length} produit${products.length > 1 ? 's' : ''}`}
@@ -202,7 +202,7 @@ export default function ManageProductsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* ââ Ãtats ââ */}
+      {/* ── États ── */}
       {error && (
         <View style={styles.errorBox}>
           <Ionicons name="alert-circle-outline" size={18} color="#be123c" />
@@ -213,11 +213,11 @@ export default function ManageProductsScreen({ navigation }) {
       {!loading && !error && products.length === 0 && (
         <View style={styles.emptyBox}>
           <Ionicons name="cube-outline" size={40} color="#d1d5db" />
-          <Text style={styles.emptyText}>Aucun produit trouvÃ©</Text>
+          <Text style={styles.emptyText}>Aucun produit trouvé</Text>
         </View>
       )}
 
-      {/* ââ Liste ââ */}
+      {/* ── Liste ── */}
       {/* Barre de recherche */}
       <View style={styles.searchRow}>
         <TextInput
@@ -239,7 +239,7 @@ export default function ManageProductsScreen({ navigation }) {
         <View style={styles.searchResultsBox}>
           <View style={styles.searchResultsHeader}>
             <Text style={styles.searchResultsTitle}>
-              {searchResults.length === 0 ? 'Aucun rÃ©sultat' : searchResults.length + ' rÃ©sultat(s)'}
+              {searchResults.length === 0 ? 'Aucun résultat' : searchResults.length + ' résultat(s)'}
             </Text>
             <TouchableOpacity onPress={() => setSearchResults(null)}>
               <Text style={styles.searchClearBtn}>Effacer</Text>
@@ -249,7 +249,7 @@ export default function ManageProductsScreen({ navigation }) {
             <TouchableOpacity key={product.id} style={styles.productRow} onPress={() => openPanel(product)}>
               <View style={styles.productInfo}>
                 <Text style={styles.productName} numberOfLines={1}>{product.name}</Text>
-                <Text style={styles.productMeta}>{'#' + product.id + ' - ' + product.price + 'â¬'}</Text>
+                <Text style={styles.productMeta}>{'#' + product.id + ' - ' + product.price + '€'}</Text>
               </View>
               <Text style={[styles.statusBadge, product.stock_status === 'outofstock' ? styles.statusOut : styles.statusIn]}>
                 {product.stock_status === 'outofstock' ? 'Rupture' : 'En stock'}
@@ -262,14 +262,14 @@ export default function ManageProductsScreen({ navigation }) {
         {products.map((p) => <ProductRow key={p.id} product={p} />)}
       </ScrollView>
 
-      {/* ââ Panneau d'actions (modal) ââ */}
+      {/* ── Panneau d'actions (modal) ── */}
       <Modal visible={showPanel} transparent animationType="slide" onRequestClose={closePanel}>
         <View style={styles.modalOverlay}>
           <View style={styles.panel}>
 
-            {/* En-tÃªte du panneau */}
+            {/* En-tête du panneau */}
             <View style={styles.panelHeader}>
-              {selected && selected.thumbnail ? <Image source={{ uri: selected.thumbnail }} style={styles.panelThumb} resizeMode="cover" /> : null}
+              {selected && (selected.thumbnail || (selected.images && selected.images.length > 0 && selected.images[0] && selected.images[0].src)) ? <Image source={{ uri: selected.thumbnail || selected.images[0].src }} style={styles.panelThumb} resizeMode="cover" /> : null}
               <View style={{ flex: 1 }}>
                 <Text style={styles.panelTitle} numberOfLines={1}>{selected?.name}</Text>
                 <Text style={styles.panelSub}>ID #{selected?.id}</Text>
@@ -289,7 +289,7 @@ export default function ManageProductsScreen({ navigation }) {
 
             <View style={styles.divider} />
 
-            {/* Message rÃ©sultat */}
+            {/* Message résultat */}
             {actionMsg && (
               <View style={[styles.actionMsg, actionMsg.ok ? styles.actionMsgOk : styles.actionMsgErr]}>
                 <Text style={[styles.actionMsgText, actionMsg.ok ? styles.actionMsgTextOk : styles.actionMsgTextErr]}>
@@ -299,7 +299,7 @@ export default function ManageProductsScreen({ navigation }) {
             )}
 
             {/* Corriger le prix */}
-            <Text style={styles.actionLabel}>âï¸ Corriger le prix</Text>
+            <Text style={styles.actionLabel}>✏️ Corriger le prix</Text>
             <View style={styles.priceRow}>
               <TextInput
                 style={styles.priceInput}
@@ -309,7 +309,7 @@ export default function ManageProductsScreen({ navigation }) {
                 placeholder="0.00"
                 placeholderTextColor="#9ca3af"
               />
-              <Text style={styles.euroSign}>â¬</Text>
+              <Text style={styles.euroSign}>€</Text>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.actionBtnBlue, actioning && styles.disabled]}
                 onPress={handleCorrectPrice}
@@ -317,13 +317,13 @@ export default function ManageProductsScreen({ navigation }) {
               >
                 {actioning
                   ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.actionBtnText}>Mettre Ã  jour</Text>}
+                  : <Text style={styles.actionBtnText}>Mettre à jour</Text>}
               </TouchableOpacity>
             </View>
 
             <View style={styles.divider} />
 
-                        {/* DÃ©publier / Republier */}
+                        {/* Dépublier / Republier */}
             {selected && (
               <TouchableOpacity
                 style={[styles.actionBtn, styles.actionBtnSlate, actioning && styles.actionBtnDisabled]}
@@ -332,7 +332,7 @@ export default function ManageProductsScreen({ navigation }) {
               >
                 {actioning
                   ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.actionBtnText}>{selected.status === 'publish' ? 'DÃ©publier' : 'Republier'}</Text>}
+                  : <Text style={styles.actionBtnText}>{selected.status === 'publish' ? 'Dépublier' : 'Republier'}</Text>}
               </TouchableOpacity>
             )}
 
@@ -354,7 +354,7 @@ export default function ManageProductsScreen({ navigation }) {
             >
               {actioning
                 ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.actionBtnText}>Supprimer dÃ©finitivement</Text>}
+                : <Text style={styles.actionBtnText}>Supprimer définitivement</Text>}
             </TouchableOpacity>
 
           </View>
@@ -421,9 +421,9 @@ const styles = StyleSheet.create({
   searchResultsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10, backgroundColor: '#ede9fe' },
   searchResultsTitle: { fontWeight: '700', color: '#4f46e5', fontSize: 13 },
   searchClearBtn: { color: '#6b7280', fontSize: 13, fontWeight: '600' },
-  outOfStockBtn: { backgroundColor: '#f59e0b' },
+  outOfStockBtn: { backgroundColor: '#f59e0b', marginTop: 12 },
   actionBtnSlate:    { backgroundColor: '#64748b' },
-  actionBtnRed:      { backgroundColor: '#ef4444' },
+  actionBtnRed:      { backgroundColor: '#ef4444', marginTop: 12 },
   actionBtnDisabled: { opacity: 0.5 },
   statusBadge: { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   statusIn: { backgroundColor: '#d1fae5', color: '#065f46' },
