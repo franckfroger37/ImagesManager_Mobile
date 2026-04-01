@@ -349,7 +349,7 @@ export default function ManageProductsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container:    { width: 90, flexShrink: 1, backgroundColor: '#f8fafc' },
+  container:    { flex: 1, backgroundColor: '#f8fafc' },
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   headerCount:  { fontSize: 14, color: '#6b7280', fontWeight: '500' },
   refreshBtn:   { padding: 6 },
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   actionMsgTextErr: { color: '#be123c' },
   actionLabel:  { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
   priceRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  priceInput:   { flex: 1, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 10, fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  priceInput:   { width: 90, flexShrink: 1, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 10, fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
   euroSign:     { fontSize: 18, color: '#6b7280', fontWeight: '600' },
   actionBtn:    { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
   actionBtnBlue: { backgroundColor: '#2563eb' },
