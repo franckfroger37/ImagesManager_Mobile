@@ -1,8 +1,8 @@
-// Version WEB de woocommerceService â upload via Blob au lieu de expo-file-system
+// Version WEB de woocommerceService — upload via Blob au lieu de expo-file-system
 
 export const testWooConnection = async (settings) => {
   const { wooUrl, consumerKey, consumerSecret } = settings;
-  if (!wooUrl || !consumerKey || !consumerSecret) throw new Error('ParamÃ¨tres WooCommerce manquants');
+  if (!wooUrl || !consumerKey || !consumerSecret) throw new Error('Paramètres WooCommerce manquants');
 
   const url = `${wooUrl}/wp-json/wc/v3/products?per_page=1&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`;
   const response = await fetch(url, { method: 'GET' });
@@ -24,12 +24,12 @@ export const testWpAuth = async (settings) => {
     headers: { Authorization: `Basic ${credentials}` },
   });
 
-  if (!response.ok) throw new Error(`Authentification Ã©chouÃ©e (${response.status})`);
+  if (!response.ok) throw new Error(`Authentification échouée (${response.status})`);
   const data = await response.json();
   return data.name || wpUsername;
 };
 
-// ââ Chargement des catÃ©gories rÃ©elles depuis WooCommerce ââââââââââââââââââââââ
+// ── Chargement des catégories réelles depuis WooCommerce ──────────────────────
 // Retourne [{label, value (slug), id}] ou null si erreur
 export const fetchCategories = async (settings) => {
   const { wooUrl, consumerKey, consumerSecret } = settings;
@@ -50,7 +50,7 @@ export const uploadImage = async (imageUri, refName, settings) => {
   const { wooUrl, wpUsername, wpAppPassword } = settings;
   const credentials = btoa(`${wpUsername}:${wpAppPassword}`);
 
-  // Sur web, imageUri est un data URL â on le convertit en Blob
+  // Sur web, imageUri est un data URL — on le convertit en Blob
   const fetchResponse = await fetch(imageUri);
   const blob = await fetchResponse.blob();
 
@@ -69,16 +69,16 @@ export const uploadImage = async (imageUri, refName, settings) => {
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(`Upload image Ã©chouÃ©: ${data.message || response.status}`);
+    throw new Error(`Upload image échoué: ${data.message || response.status}`);
   }
 
   const data = await response.json();
   return data.id;
 };
 
-// ââ RÃ©solution de l'ID catÃ©gorie ââââââââââââââââââââââââââââââââââââââââââââââ
+// ── Résolution de l'ID catégorie ──────────────────────────────────────────────
 // Si categoryId est fourni directement (depuis fetchCategories), on l'utilise.
-// Sinon : cherche par slug, puis par nom, puis crÃ©e en dernier recours.
+// Sinon : cherche par slug, puis par nom, puis crée en dernier recours.
 export const getCategoryId = async (categorySlug, categoryLabel, settings, categoryId = null) => {
   if (categoryId) return categoryId;
 
@@ -95,7 +95,7 @@ export const getCategoryId = async (categorySlug, categoryLabel, settings, categ
     }
   } catch (_) {}
 
-  // 2. Recherche par nom (Ã©vite les doublons si le slug diffÃ¨re)
+  // 2. Recherche par nom (évite les doublons si le slug diffère)
   try {
     const nameResp = await fetch(`${base}?search=${encodeURIComponent(categoryLabel)}&${auth}`);
     if (nameResp.ok) {
@@ -104,7 +104,7 @@ export const getCategoryId = async (categorySlug, categoryLabel, settings, categ
     }
   } catch (_) {}
 
-  // 3. CrÃ©ation uniquement si vraiment introuvable
+  // 3. Création uniquement si vraiment introuvable
   try {
     const createResp = await fetch(`${base}?${auth}`, {
       method: 'POST',
@@ -122,7 +122,7 @@ export const getCategoryId = async (categorySlug, categoryLabel, settings, categ
 
 export const createProduct = async ({ refName, price, description, categorySlug, categoryLabel, categoryId, imageId, settings }) => {
   const { wooUrl, consumerKey, consumerSecret } = settings;
-  // Utilise l'ID direct si disponible (chargÃ© depuis l'API), sinon rÃ©solution par slug/nom
+  // Utilise l'ID direct si disponible (chargé depuis l'API), sinon résolution par slug/nom
   const catId = await getCategoryId(categorySlug, categoryLabel, settings, categoryId);
 
   const productData = {
@@ -149,7 +149,7 @@ export const createProduct = async ({ refName, price, description, categorySlug,
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data.message || `Erreur crÃ©ation produit: ${response.status}`);
+    throw new Error(data.message || `Erreur création produit: ${response.status}`);
   }
 
   const data = await response.json();
@@ -161,23 +161,23 @@ export const publishProduct = async ({ processedImageUri, refName, price, descri
 
   if (settings.wpUsername && settings.wpAppPassword) {
     try {
-      onProgress?.('ð¤ Upload de l\'image...');
+      onProgress?.('📤 Upload de l\'image...');
       imageId = await uploadImage(processedImageUri, refName, settings);
-      onProgress?.(`â Image uploadÃ©e (ID: ${imageId})`);
+      onProgress?.(`✅ Image uploadée (ID: ${imageId})`);
     } catch (e) {
-      onProgress?.(`â ï¸ Upload image Ã©chouÃ©: ${e.message}`);
+      onProgress?.(`⚠️ Upload image échoué: ${e.message}`);
     }
   } else {
-    onProgress?.('â ï¸ Identifiants WordPress non configurÃ©s â produit sans image');
+    onProgress?.('⚠️ Identifiants WordPress non configurés — produit sans image');
   }
 
-  onProgress?.('ð¦ CrÃ©ation du produit...');
+  onProgress?.('📦 Création du produit...');
   const result = await createProduct({ refName, price, description, categorySlug, categoryLabel, categoryId, imageId, settings });
-  onProgress?.(`â Produit #${result.id} publiÃ© !`);
+  onProgress?.(`✅ Produit #${result.id} publié !`);
   return result;
 };
 
-// ââ Actions post-publication ââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ── Actions post-publication ──────────────────────────────────────────────────
 
 export const updateProductPrice = async (productId, newPrice, settings) => {
   const { wooUrl, consumerKey, consumerSecret } = settings;
@@ -226,27 +226,34 @@ export const deleteProduct = async (productId, settings) => {
   return true;
 };
 
-// ââ Liste des produits rÃ©cents âââââââââââââââââââââââââââââââââââââââââââââââââ
-// Retourne les N derniers produits (publiÃ©s + brouillons)
-export const fetchRecentProducts = async (settings, perPage = 30) => {
+// ── Liste des produits récents ─────────────────────────────────────────────────
+// Retourne les N derniers produits (publiés + brouillons)
+export const fetchRecentProducts = async (settings) => {
   const { wooUrl, consumerKey, consumerSecret } = settings;
   if (!wooUrl || !consumerKey || !consumerSecret) return [];
-  const resp = await fetch(
-    `${wooUrl}/wp-json/wc/v3/products?per_page=${perPage}&orderby=date&order=desc&status=any&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`
-  );
-  if (!resp.ok) throw new Error(`Erreur ${resp.status}`);
-  const products = await resp.json();
-  return products.map((p) => ({
+  const allProducts = [];
+  let page = 1;
+  while (true) {
+    const resp = await fetch(
+      `${wooUrl}/wp-json/wc/v3/products?per_page=100&page=${page}&orderby=date&order=desc&status=any&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`
+    );
+    if (!resp.ok) throw new Error(`Erreur ${resp.status}`);
+    const batch = await resp.json();
+    allProducts.push(...batch);
+    if (batch.length < 100) break;
+    page++;
+  }
+  return allProducts.map((p) => ({
     id:        p.id,
     name:      p.name,
-    price:     p.regular_price || p.price || '0',
-    status:    p.status, // 'publish' | 'draft' | 'pending' ...
-    thumbnail: p.images?.[0]?.src || null,
+    price:     p.regular_price || p.price,
+    status:    p.status,
+    thumbnail: p.images && p.images[0] ? p.images[0].src || null : null,
     permalink: p.permalink,
   }));
 };
 
-// ââ Republier un produit (draft â publish) âââââââââââââââââââââââââââââââââââââ
+// ── Republier un produit (draft → publish) ─────────────────────────────────────
 export const republishProduct = async (productId, settings) => {
   const { wooUrl, consumerKey, consumerSecret } = settings;
   const response = await fetch(
