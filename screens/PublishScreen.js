@@ -306,7 +306,7 @@ export default function PublishScreen({ route, navigation }) {
             {/* Supprimer et recommencer */}
                     <TouchableOpacity
           style={[styles.actionBtn, styles.actionBtnRed, postActioning && styles.actionBtnDisabled]}
-          onPress={handleDelete}
+          onPress={handleDeleteAndRestart}
           disabled={postActioning}
         >
           {postActioning
