@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, Image, ActivityIndicator, SafeAreaView, Modal, Linking,
@@ -38,12 +38,15 @@ export default function ManageProductsScreen({ navigation }) {
   const [searchResults, setSearchResults] = useState(null);
   const [searching, setSearching] = useState(false);
 
-  const loadProducts = useCallback(async (s) => {
-    setLoading(true);
+  const loadedOnceRef = useRef(false);
+
+  const loadProducts = useCallback(async (s, silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const list = await fetchRecentProducts(s || settings);
       setProducts(list);
+      loadedOnceRef.current = true;
     } catch (e) {
       setError(e.message);
     } finally {
@@ -55,7 +58,7 @@ export default function ManageProductsScreen({ navigation }) {
     useCallback(() => {
       getSettings().then((s) => {
         setSettings(s);
-        loadProducts(s);
+        loadProducts(s, loadedOnceRef.current);
       });
     }, [])
   );
