@@ -41,12 +41,12 @@ export default function ManageProductsScreen({ navigation }) {
   const loadedOnceRef = useRef(false);
 
   const loadProducts = useCallback(async (s, silent = false) => {
+    loadedOnceRef.current = true;
     if (!silent) setLoading(true);
     setError(null);
     try {
       const list = await fetchRecentProducts(s || settings);
       setProducts(list);
-      loadedOnceRef.current = true;
     } catch (e) {
       setError(e.message);
     } finally {
