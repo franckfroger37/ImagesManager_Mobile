@@ -22,6 +22,29 @@ const STATUS_LABEL = {
   pending: { label: 'En attente', bg: '#e0f2fe', text: '#0369a1', icon: 'time-outline' },
 };
 
+const ProductRow = ({ product, onPress }) => {
+    const st = STATUS_LABEL[product.status] || STATUS_LABEL.draft;
+    return (
+      <TouchableOpacity style={styles.row} onPress={onPress}>
+        {product.thumbnail
+          ? <Image source={{ uri: product.thumbnail }} style={styles.thumb} />
+          : <View style={[styles.thumb, styles.thumbPlaceholder]}>
+              <Ionicons name="image-outline" size={24} color="#d1d5db" />
+            </View>
+        }
+        <View style={styles.rowInfo}>
+          <Text style={styles.rowName} numberOfLines={1}>{product.name}</Text>
+          <Text style={styles.rowPrice}>{parseFloat(product.price).toFixed(2)} €</Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
+          <Ionicons name={st.icon} size={12} color={st.text} />
+          <Text style={[styles.statusText, { color: st.text }]}>{st.label}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color="#d1d5db" style={{ marginLeft: 4 }} />
+      </TouchableOpacity>
+    );
+  };
+
 export default function ManageProductsScreen({ navigation }) {
   const [settings,  setSettings]  = useState(null);
   const [products,  setProducts]  = useState([]);
@@ -173,28 +196,6 @@ export default function ManageProductsScreen({ navigation }) {
 
 
   // ── Rendu d'un produit dans la liste ────────────────────────────────────────
-  const ProductRow = ({ product }) => {
-    const st = STATUS_LABEL[product.status] || STATUS_LABEL.draft;
-    return (
-      <TouchableOpacity style={styles.row} onPress={() => openPanel(product)}>
-        {product.thumbnail
-          ? <Image source={{ uri: product.thumbnail }} style={styles.thumb} />
-          : <View style={[styles.thumb, styles.thumbPlaceholder]}>
-              <Ionicons name="image-outline" size={24} color="#d1d5db" />
-            </View>
-        }
-        <View style={styles.rowInfo}>
-          <Text style={styles.rowName} numberOfLines={1}>{product.name}</Text>
-          <Text style={styles.rowPrice}>{parseFloat(product.price).toFixed(2)} €</Text>
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-          <Ionicons name={st.icon} size={12} color={st.text} />
-          <Text style={[styles.statusText, { color: st.text }]}>{st.label}</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color="#d1d5db" style={{ marginLeft: 4 }} />
-      </TouchableOpacity>
-    );
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -268,7 +269,7 @@ export default function ManageProductsScreen({ navigation }) {
         </View>
       )}
       <ScrollView style={styles.list}>
-        {products.map((p) => <ProductRow key={p.id} product={p} />)}
+        {products.map((p) => <ProductRow key={p.id} product={p} onPress={() => openPanel(p)} />)}
       </ScrollView>
 
       {/* ── Panneau d'actions (modal) ── */}
