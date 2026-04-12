@@ -17,7 +17,7 @@ import {
 } from '../services/woocommerceService';
 
 const STATUS_LABEL = {
-  publish: { label: 'PubliÃ©',    bg: '#dcfce7', text: '#15803d', icon: 'eye-outline' },
+  publish: { label: 'PubliÃÂ©',    bg: '#dcfce7', text: '#15803d', icon: 'eye-outline' },
   draft:   { label: 'Brouillon', bg: '#fef9c3', text: '#a16207', icon: 'eye-off-outline' },
   pending: { label: 'En attente', bg: '#e0f2fe', text: '#0369a1', icon: 'time-outline' },
 };
@@ -34,7 +34,7 @@ const ProductRow = ({ product, onPress }) => {
         }
         <View style={styles.rowInfo}>
           <Text style={styles.rowName} numberOfLines={1}>{product.name}</Text>
-          <Text style={styles.rowPrice}>{parseFloat(product.price).toFixed(2)} â¬</Text>
+          <Text style={styles.rowPrice}>{parseFloat(product.price).toFixed(2)} Ã¢ÂÂ¬</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
           <Ionicons name={st.icon} size={12} color={st.text} />
@@ -51,7 +51,7 @@ export default function ManageProductsScreen({ navigation }) {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
 
-  // Produit sÃ©lectionnÃ© pour le panneau d'actions
+  // Produit sÃÂ©lectionnÃÂ© pour le panneau d'actions
   const [selected,     setSelected]     = useState(null);
   const [showPanel,    setShowPanel]    = useState(false);
   const [correctPrice, setCorrectPrice] = useState('');
@@ -114,7 +114,7 @@ export default function ManageProductsScreen({ navigation }) {
     setActionMsg(null);
   };
 
-  // Met Ã  jour localement la liste aprÃ¨s une action
+  // Met ÃÂ  jour localement la liste aprÃÂ¨s une action
   const updateLocalProduct = (id, changes) => {
     setProducts((prev) => prev.map((p) => p.id === id ? { ...p, ...changes } : p));
     setSelected((prev) => prev ? { ...prev, ...changes } : prev);
@@ -127,43 +127,46 @@ export default function ManageProductsScreen({ navigation }) {
 
   const handleCorrectPrice = async () => {
     const p = parseFloat(correctPrice);
-    if (!p || p <= 0) { setActionMsg({ ok: false, msg: 'â ï¸ Prix invalide.' }); return; }
+    if (!p || p <= 0) { setActionMsg({ ok: false, msg: 'Ã¢ÂÂ Ã¯Â¸Â Prix invalide.' }); return; }
     setActioning(true);
     try {
       await updateProductPrice(selected.id, p, settings);
       updateLocalProduct(selected.id, { price: p.toFixed(2) });
-      setActionMsg({ ok: true, msg: `â Prix mis Ã  jour : ${p.toFixed(2)} â¬` });
+      setActionMsg({ ok: true, msg: `Ã¢ÂÂ Prix mis ÃÂ  jour : ${p.toFixed(2)} Ã¢ÂÂ¬` });
     } catch (e) {
-      setActionMsg({ ok: false, msg: `â ${e.message}` });
+      setActionMsg({ ok: false, msg: `Ã¢ÂÂ ${e.message}` });
     } finally { setActioning(false); }
   };
 
   const handleTogglePublish = async () => {
+    // Capturer id/statut AVANT tout await (la closure peut changer)
+    const productId   = selected.id;
     const isPublished = selected.status === 'publish';
+    const newStatus   = isPublished ? 'draft' : 'publish';
     setActioning(true);
     try {
       if (isPublished) {
-        await unpublishProduct(selected.id, settings);
-        updateLocalProduct(selected.id, { status: 'draft' });
+        await unpublishProduct(productId, settings);
       } else {
-        await republishProduct(selected.id, settings);
-        updateLocalProduct(selected.id, { status: 'publish' });
+        await republishProduct(productId, settings);
       }
-      closePanel();
+      // Un seul batch : setProducts + fermeture panel (pas de double setSelected)
+      suppressNextFocusRef.current = true;
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, status: newStatus } : p));
+      setShowPanel(false);
+      setSelected(null);
+      setActionMsg(null);
     } catch (e) {
-      setActionMsg({ ok: false, msg: `â ${e.message}` });
+      setActionMsg({ ok: false, msg: `❌ ${e.message}` });
     } finally { setActioning(false); }
   };
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
     setSearching(true);
     try {
       const results = await searchProducts(searchQuery.trim(), settings);
       setSearchResults(results);
     } catch (e) {
       setSearchResults([]);
-      setActionMsg({ ok: false, msg: 'â Erreur recherche: ' + e.message });
+      setActionMsg({ ok: false, msg: 'Ã¢ÂÂ Erreur recherche: ' + e.message });
     } finally {
       setSearching(false);
     }
@@ -180,7 +183,7 @@ export default function ManageProductsScreen({ navigation }) {
       closePanel();
       setActioning(false);
     } catch (e) {
-      setActionMsg({ ok: false, msg: 'â ' + e.message });
+      setActionMsg({ ok: false, msg: 'Ã¢ÂÂ ' + e.message });
     } finally {
       setActioning(false);
     }
@@ -194,18 +197,18 @@ export default function ManageProductsScreen({ navigation }) {
       closePanel();
       setActioning(false);
     } catch (e) {
-      setActionMsg({ ok: false, msg: `â ${e.message}` });
+      setActionMsg({ ok: false, msg: `Ã¢ÂÂ ${e.message}` });
       setActioning(false);
     }
   };
 
 
-  // ââ Rendu d'un produit dans la liste ââââââââââââââââââââââââââââââââââââââââ
+  // Ã¢ÂÂÃ¢ÂÂ Rendu d'un produit dans la liste Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
 
   return (
     <SafeAreaView style={styles.container}>
 
-      {/* ââ En-tÃªte avec bouton refresh ââ */}
+      {/* Ã¢ÂÂÃ¢ÂÂ En-tÃÂªte avec bouton refresh Ã¢ÂÂÃ¢ÂÂ */}
       <View style={styles.header}>
         <Text style={styles.headerCount}>
           {loading ? 'Chargement...' : `${products.length} produit${products.length > 1 ? 's' : ''}`}
@@ -217,7 +220,7 @@ export default function ManageProductsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* ââ Ãtats ââ */}
+      {/* Ã¢ÂÂÃ¢ÂÂ ÃÂtats Ã¢ÂÂÃ¢ÂÂ */}
       {error && (
         <View style={styles.errorBox}>
           <Ionicons name="alert-circle-outline" size={18} color="#be123c" />
@@ -228,11 +231,11 @@ export default function ManageProductsScreen({ navigation }) {
       {!loading && !error && products.length === 0 && (
         <View style={styles.emptyBox}>
           <Ionicons name="cube-outline" size={40} color="#d1d5db" />
-          <Text style={styles.emptyText}>Aucun produit trouvÃ©</Text>
+          <Text style={styles.emptyText}>Aucun produit trouvÃÂ©</Text>
         </View>
       )}
 
-      {/* ââ Liste ââ */}
+      {/* Ã¢ÂÂÃ¢ÂÂ Liste Ã¢ÂÂÃ¢ÂÂ */}
       {/* Barre de recherche */}
       <View style={styles.searchRow}>
         <TextInput
@@ -254,7 +257,7 @@ export default function ManageProductsScreen({ navigation }) {
         <View style={styles.searchResultsBox}>
           <View style={styles.searchResultsHeader}>
             <Text style={styles.searchResultsTitle}>
-              {searchResults.length === 0 ? 'Aucun rÃ©sultat' : searchResults.length + ' rÃ©sultat(s)'}
+              {searchResults.length === 0 ? 'Aucun rÃÂ©sultat' : searchResults.length + ' rÃÂ©sultat(s)'}
             </Text>
             <TouchableOpacity onPress={() => setSearchResults(null)}>
               <Text style={styles.searchClearBtn}>Effacer</Text>
@@ -264,7 +267,7 @@ export default function ManageProductsScreen({ navigation }) {
             <TouchableOpacity key={product.id} style={styles.productRow} onPress={() => openPanel(product)}>
               <View style={styles.productInfo}>
                 <Text style={styles.productName} numberOfLines={1}>{product.name}</Text>
-                <Text style={styles.productMeta}>{'#' + product.id + ' - ' + product.price + 'â¬'}</Text>
+                <Text style={styles.productMeta}>{'#' + product.id + ' - ' + product.price + 'Ã¢ÂÂ¬'}</Text>
               </View>
               <Text style={[styles.statusBadge, product.stock_status === 'outofstock' ? styles.statusOut : styles.statusIn]}>
                 {product.stock_status === 'outofstock' ? 'Rupture' : 'En stock'}
@@ -273,16 +276,23 @@ export default function ManageProductsScreen({ navigation }) {
           ))}
         </View>
       )}
-      <ScrollView style={styles.list}>
-        {products.map((p) => <ProductRow key={p.id} product={p} onPress={() => openPanel(p)} />)}
-      </ScrollView>
-
-      {/* ââ Panneau d'actions (modal) ââ */}
+      {/* Loading centré quand la liste est vide au premier montage */}
+      {loading && products.length === 0 ? (
+        <View style={styles.loadingCenter}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.loadingCenterText}>Chargement des produits…</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.list}>
+          {products.map((p) => <ProductRow key={p.id} product={p} onPress={() => openPanel(p)} />)}
+        </ScrollView>
+      )}
+      {/* Ã¢ÂÂÃ¢ÂÂ Panneau d'actions (modal) Ã¢ÂÂÃ¢ÂÂ */}
       <Modal visible={showPanel && !!selected} transparent animationType="none" onRequestClose={closePanel}>
         <View style={styles.modalOverlay}>
           <View style={styles.panel}>
 
-            {/* En-tÃªte du panneau */}
+            {/* En-tÃÂªte du panneau */}
             <View style={styles.panelHeader}>
               {selected && (selected.thumbnail || (selected.images && selected.images.length > 0 && selected.images[0])) ? <Image source={{ uri: selected.thumbnail || selected.images[0].src }} style={styles.panelThumb} resizeMode="cover" /> : null}
               <View style={{ flex: 1 }}>
@@ -298,7 +308,7 @@ export default function ManageProductsScreen({ navigation }) {
 
             <View style={styles.divider} />
 
-            {/* Message rÃ©sultat */}
+            {/* Message rÃÂ©sultat */}
             {actionMsg && (
               <View style={[styles.actionMsg, actionMsg.ok ? styles.actionMsgOk : styles.actionMsgErr]}>
                 <Text style={[styles.actionMsgText, actionMsg.ok ? styles.actionMsgTextOk : styles.actionMsgTextErr]}>
@@ -308,7 +318,7 @@ export default function ManageProductsScreen({ navigation }) {
             )}
 
             {/* Corriger le prix */}
-            <Text style={styles.actionLabel}>âï¸ Corriger le prix</Text>
+            <Text style={styles.actionLabel}>Ã¢ÂÂÃ¯Â¸Â Corriger le prix</Text>
             <View style={styles.priceRow}>
               <TextInput
                 style={styles.priceInput}
@@ -318,7 +328,7 @@ export default function ManageProductsScreen({ navigation }) {
                 placeholder="0.00"
                 placeholderTextColor="#9ca3af"
               />
-              <Text style={styles.euroSign}>â¬</Text>
+              <Text style={styles.euroSign}>Ã¢ÂÂ¬</Text>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.actionBtnBlue, actioning && styles.disabled]}
                 onPress={handleCorrectPrice}
@@ -326,7 +336,7 @@ export default function ManageProductsScreen({ navigation }) {
               >
                 {actioning
                   ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.actionBtnText}>Mettre Ã  jour</Text>}
+                  : <Text style={styles.actionBtnText}>Mettre ÃÂ  jour</Text>}
               </TouchableOpacity>
             </View>
 
@@ -337,7 +347,7 @@ export default function ManageProductsScreen({ navigation }) {
             style={[styles.actionBtn, styles.actionBtnSlate, actioning && styles.actionBtnDisabled]}
             onPress={handleTogglePublish} disabled={actioning}>
             {actioning ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={styles.actionBtnText}>{selected.status === 'publish' ? 'DÃ©publier' : 'Republier'}</Text>}
+              : <Text style={styles.actionBtnText}>{selected.status === 'publish' ? 'DÃÂ©publier' : 'Republier'}</Text>}
           </TouchableOpacity>
         )}
 
@@ -356,7 +366,7 @@ export default function ManageProductsScreen({ navigation }) {
               style={[styles.actionBtn, styles.actionBtnRed, actioning && styles.actionBtnDisabled]}
               onPress={handleDelete} disabled={actioning}>
               {actioning ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.actionBtnText}>Supprimer dÃ©finitivement</Text>}
+                : <Text style={styles.actionBtnText}>Supprimer dÃÂ©finitivement</Text>}
             </TouchableOpacity>
 
           </View>
@@ -374,7 +384,9 @@ const styles = StyleSheet.create({
   errorBox:     { flexDirection: 'row', alignItems: 'center', gap: 8, margin: 16, padding: 12, backgroundColor: '#fff1f2', borderRadius: 10, borderLeftWidth: 3, borderLeftColor: '#e11d48' },
   errorText:    { flex: 1, fontSize: 13, color: '#be123c' },
   emptyBox:     { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 12 },
-  emptyText:    { fontSize: 15, color: '#9ca3af' },
+  emptyText:         { fontSize: 15, color: '#9ca3af' },
+  loadingCenter:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
+  loadingCenterText: { fontSize: 14, color: '#6b7280' },
   list:         { flex: 1 },
   row:          { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', gap: 12 },
   thumb:        { width: 56, height: 56, borderRadius: 8, backgroundColor: '#f3f4f6' },
