@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { calcCenterCrop } from '../services/imageService';
 
 const SCREEN_W = Dimensions.get('window').width;
-const TARGET_RATIO = 2 / 3;
+const TARGET_RATIO = 1;
 const SCREEN_H = Dimensions.get('window').height;
 const _FW = SCREEN_W - 32;
 const _FH = _FW / TARGET_RATIO;
