@@ -5,19 +5,24 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { calcCenterCrop } from '../services/imageService';
+import { getSettings } from '../services/storageService';
 
 const SCREEN_W = Dimensions.get('window').width;
-const TARGET_RATIO = 1;
 const SCREEN_H = Dimensions.get('window').height;
 const _FW = SCREEN_W - 32;
-const _FH = _FW / TARGET_RATIO;
-// Scale proportionally so FRAME fits on screen while keeping 2:3 ratio
-const _SCALE = Math.min(1, (SCREEN_H * 0.58) / _FH);
-const FRAME_W = Math.round(_FW * _SCALE);
-const FRAME_H = Math.round(_FH * _SCALE);
 
 export default function CropScreen({ route, navigation }) {
   const { uri, width: origW, height: origH, fileName } = route.params;
+
+  // Cadre dynamique selon résolution cible (settings)
+  const [cropSettings, setCropSettings] = useState(null);
+  useEffect(() => { getSettings().then(setCropSettings); }, []);
+  const _targetW = cropSettings?.targetWidth  || 600;
+  const _targetH = cropSettings?.targetHeight || 600;
+  const _FH      = Math.round(_FW / (_targetW / _targetH));
+  const _SCALE   = Math.min(1, (SCREEN_H * 0.58) / _FH);
+  const FRAME_W  = Math.round(_FW * _SCALE);
+  const FRAME_H  = Math.round(_FH * _SCALE);
 
   const scaleToFit = Math.max(FRAME_W / origW, FRAME_H / origH);
   const [scale, setScale] = useState(scaleToFit);
@@ -27,6 +32,10 @@ export default function CropScreen({ route, navigation }) {
   const panY = useRef(new Animated.Value(0)).current;
   const scaleRef = useRef(scaleToFit);
   useEffect(() => { scaleRef.current = scale; }, [scale]);
+  useEffect(() => {
+    setScale(scaleToFit);
+    offsetRef.current = { x: 0, y: 0 };
+  }, [FRAME_W, FRAME_H]);
 
   const constrain = (dx, dy, s) => {
     const imgW = origW * s;
