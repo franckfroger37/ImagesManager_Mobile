@@ -139,7 +139,6 @@ export default function ManageProductsScreen({ navigation }) {
   };
 
   const handleTogglePublish = async () => {
-    // Capturer id/statut AVANT tout await (la closure peut changer)
     const productId   = selected.id;
     const isPublished = selected.status === 'publish';
     const newStatus   = isPublished ? 'draft' : 'publish';
@@ -150,16 +149,20 @@ export default function ManageProductsScreen({ navigation }) {
       } else {
         await republishProduct(productId, settings);
       }
-      // Un seul batch : setProducts + fermeture panel (pas de double setSelected)
       suppressNextFocusRef.current = true;
       setProducts(prev => prev.map(p => p.id === productId ? { ...p, status: newStatus } : p));
       setShowPanel(false);
       setSelected(null);
       setActionMsg(null);
     } catch (e) {
-      setActionMsg({ ok: false, msg: `❌ ${e.message}` });
-    } finally { setActioning(false); }
+      setActionMsg({ ok: false, msg: '\u274c ' + e.message });
+    } finally {
+      setActioning(false);
+    }
   };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
     setSearching(true);
     try {
       const results = await searchProducts(searchQuery.trim(), settings);
@@ -276,17 +279,17 @@ export default function ManageProductsScreen({ navigation }) {
           ))}
         </View>
       )}
-      {/* Loading centré quand la liste est vide au premier montage */}
       {loading && products.length === 0 ? (
         <View style={styles.loadingCenter}>
           <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.loadingCenterText}>Chargement des produits…</Text>
+          <Text style={styles.loadingCenterText}>Chargement des produits...</Text>
         </View>
       ) : (
         <ScrollView style={styles.list}>
           {products.map((p) => <ProductRow key={p.id} product={p} onPress={() => openPanel(p)} />)}
         </ScrollView>
       )}
+
       {/* Ã¢ÂÂÃ¢ÂÂ Panneau d'actions (modal) Ã¢ÂÂÃ¢ÂÂ */}
       <Modal visible={showPanel && !!selected} transparent animationType="none" onRequestClose={closePanel}>
         <View style={styles.modalOverlay}>
@@ -384,9 +387,7 @@ const styles = StyleSheet.create({
   errorBox:     { flexDirection: 'row', alignItems: 'center', gap: 8, margin: 16, padding: 12, backgroundColor: '#fff1f2', borderRadius: 10, borderLeftWidth: 3, borderLeftColor: '#e11d48' },
   errorText:    { flex: 1, fontSize: 13, color: '#be123c' },
   emptyBox:     { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 12 },
-  emptyText:         { fontSize: 15, color: '#9ca3af' },
-  loadingCenter:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
-  loadingCenterText: { fontSize: 14, color: '#6b7280' },
+  emptyText:    { fontSize: 15, color: '#9ca3af' },
   list:         { flex: 1 },
   row:          { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', gap: 12 },
   thumb:        { width: 56, height: 56, borderRadius: 8, backgroundColor: '#f3f4f6' },
@@ -443,4 +444,6 @@ const styles = StyleSheet.create({
   statusBadge: { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   statusIn: { backgroundColor: '#d1fae5', color: '#065f46' },
   statusOut: { backgroundColor: '#fee2e2', color: '#991b1b' },
+  loadingCenter:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
+  loadingCenterText: { fontSize: 14, color: '#6b7280' },
 });
