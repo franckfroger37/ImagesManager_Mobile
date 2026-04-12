@@ -39,7 +39,8 @@ export default function ManageProductsScreen({ navigation }) {
   const [searching, setSearching] = useState(false);
 
   const loadedOnceRef        = useRef(false);
-  const suppressNextFocusRef = useRef(false);
+  const suppressNextFocusRef  = useRef(false);
+  const lastFocusTimeRef    = useRef(0);
 
   const loadProducts = useCallback(async (s, silent = false) => {
     loadedOnceRef.current = true;
@@ -61,6 +62,9 @@ export default function ManageProductsScreen({ navigation }) {
         suppressNextFocusRef.current = false;
         return;
       }
+      const now = Date.now();
+      if (now - lastFocusTimeRef.current < 2000) return; // debounce 2s
+      lastFocusTimeRef.current = now;
       getSettings().then((s) => {
         setSettings(s);
         loadProducts(s, loadedOnceRef.current);
@@ -268,7 +272,7 @@ export default function ManageProductsScreen({ navigation }) {
       </ScrollView>
 
       {/* ── Panneau d'actions (modal) ── */}
-      <Modal visible={showPanel} transparent animationType="slide" onRequestClose={closePanel}>
+      <Modal visible={showPanel && !!selected} transparent animationType="none" onRequestClose={closePanel}>
         <View style={styles.modalOverlay}>
           <View style={styles.panel}>
 
