@@ -17,7 +17,7 @@ import {
 } from '../services/woocommerceService';
 
 const STATUS_LABEL = {
-  publish: { label: 'PubliÃÂÃÂ©',    bg: '#dcfce7', text: '#15803d', icon: 'eye-outline' },
+  publish: { label: 'PubliÃÂÃÂÃÂÃÂ©',    bg: '#dcfce7', text: '#15803d', icon: 'eye-outline' },
   draft:   { label: 'Brouillon', bg: '#fef9c3', text: '#a16207', icon: 'eye-off-outline' },
   pending: { label: 'En attente', bg: '#e0f2fe', text: '#0369a1', icon: 'time-outline' },
 };
@@ -34,7 +34,7 @@ const ProductRow = ({ product, onPress }) => {
         }
         <View style={styles.rowInfo}>
           <Text style={styles.rowName} numberOfLines={1}>{product.name}</Text>
-          <Text style={styles.rowPrice}>{parseFloat(product.price).toFixed(2)} ÃÂ¢ÃÂÃÂ¬</Text>
+          <Text style={styles.rowPrice}>{parseFloat(product.price).toFixed(2)} ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¬</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
           <Ionicons name={st.icon} size={12} color={st.text} />
@@ -51,7 +51,7 @@ export default function ManageProductsScreen({ navigation }) {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
 
-  // Produit sÃÂÃÂ©lectionnÃÂÃÂ© pour le panneau d'actions
+  // Produit sÃÂÃÂÃÂÃÂ©lectionnÃÂÃÂÃÂÃÂ© pour le panneau d'actions
   const [selected,     setSelected]     = useState(null);
   const [showPanel,    setShowPanel]    = useState(false);
   const [correctPrice, setCorrectPrice] = useState('');
@@ -114,7 +114,7 @@ export default function ManageProductsScreen({ navigation }) {
     setActionMsg(null);
   };
 
-  // Met ÃÂÃÂ  jour localement la liste aprÃÂÃÂ¨s une action
+  // Met ÃÂÃÂÃÂÃÂ  jour localement la liste aprÃÂÃÂÃÂÃÂ¨s une action
   const updateLocalProduct = (id, changes) => {
     setProducts((prev) => prev.map((p) => p.id === id ? { ...p, ...changes } : p));
     setSelected((prev) => prev ? { ...prev, ...changes } : prev);
@@ -127,14 +127,14 @@ export default function ManageProductsScreen({ navigation }) {
 
   const handleCorrectPrice = async () => {
     const p = parseFloat(correctPrice);
-    if (!p || p <= 0) { setActionMsg({ ok: false, msg: 'ÃÂ¢ÃÂÃÂ ÃÂ¯ÃÂ¸ÃÂ Prix invalide.' }); return; }
+    if (!p || p <= 0) { setActionMsg({ ok: false, msg: 'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ ÃÂÃÂ¯ÃÂÃÂ¸ÃÂÃÂ Prix invalide.' }); return; }
     setActioning(true);
     try {
       await updateProductPrice(selected.id, p, settings);
       updateLocalProduct(selected.id, { price: p.toFixed(2) });
-      setActionMsg({ ok: true, msg: `ÃÂ¢ÃÂÃÂ Prix mis ÃÂÃÂ  jour : ${p.toFixed(2)} ÃÂ¢ÃÂÃÂ¬` });
+      setActionMsg({ ok: true, msg: `ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Prix mis ÃÂÃÂÃÂÃÂ  jour : ${p.toFixed(2)} ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¬` });
     } catch (e) {
-      setActionMsg({ ok: false, msg: `ÃÂ¢ÃÂÃÂ ${e.message}` });
+      setActionMsg({ ok: false, msg: `ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ ${e.message}` });
     } finally { setActioning(false); }
   };
 
@@ -169,7 +169,7 @@ export default function ManageProductsScreen({ navigation }) {
       setSearchResults(results);
     } catch (e) {
       setSearchResults([]);
-      setActionMsg({ ok: false, msg: 'ÃÂ¢ÃÂÃÂ Erreur recherche: ' + e.message });
+      setActionMsg({ ok: false, msg: 'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Erreur recherche: ' + e.message });
     } finally {
       setSearching(false);
     }
@@ -186,7 +186,7 @@ export default function ManageProductsScreen({ navigation }) {
       closePanel();
       setActioning(false);
     } catch (e) {
-      setActionMsg({ ok: false, msg: 'ÃÂ¢ÃÂÃÂ ' + e.message });
+      setActionMsg({ ok: false, msg: 'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ ' + e.message });
     } finally {
       setActioning(false);
     }
@@ -200,18 +200,18 @@ export default function ManageProductsScreen({ navigation }) {
       closePanel();
       setActioning(false);
     } catch (e) {
-      setActionMsg({ ok: false, msg: `ÃÂ¢ÃÂÃÂ ${e.message}` });
+      setActionMsg({ ok: false, msg: `ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ ${e.message}` });
       setActioning(false);
     }
   };
 
 
-  // ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Rendu d'un produit dans la liste ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ
+  // ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Rendu d'un produit dans la liste ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ
 
   return (
     <SafeAreaView style={styles.container}>
 
-      {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ En-tÃÂÃÂªte avec bouton refresh ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
+      {/* ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ En-tÃÂÃÂÃÂÃÂªte avec bouton refresh ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ */}
       <View style={styles.header}>
         <Text style={styles.headerCount}>
           {loading ? 'Chargement...' : `${products.length} produit${products.length > 1 ? 's' : ''}`}
@@ -223,7 +223,7 @@ export default function ManageProductsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ ÃÂÃÂtats ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
+      {/* ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂtats ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ */}
       {error && (
         <View style={styles.errorBox}>
           <Ionicons name="alert-circle-outline" size={18} color="#be123c" />
@@ -234,11 +234,11 @@ export default function ManageProductsScreen({ navigation }) {
       {!loading && !error && products.length === 0 && (
         <View style={styles.emptyBox}>
           <Ionicons name="cube-outline" size={40} color="#d1d5db" />
-          <Text style={styles.emptyText}>Aucun produit trouvÃÂÃÂ©</Text>
+          <Text style={styles.emptyText}>Aucun produit trouvÃÂÃÂÃÂÃÂ©</Text>
         </View>
       )}
 
-      {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Liste ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
+      {/* ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Liste ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ */}
       {/* Barre de recherche */}
       <View style={styles.searchRow}>
         <TextInput
@@ -260,7 +260,7 @@ export default function ManageProductsScreen({ navigation }) {
         <View style={styles.searchResultsBox}>
           <View style={styles.searchResultsHeader}>
             <Text style={styles.searchResultsTitle}>
-              {searchResults.length === 0 ? 'Aucun rÃÂÃÂ©sultat' : searchResults.length + ' rÃÂÃÂ©sultat(s)'}
+              {searchResults.length === 0 ? 'Aucun rÃÂÃÂÃÂÃÂ©sultat' : searchResults.length + ' rÃÂÃÂÃÂÃÂ©sultat(s)'}
             </Text>
             <TouchableOpacity onPress={() => setSearchResults(null)}>
               <Text style={styles.searchClearBtn}>Effacer</Text>
@@ -270,7 +270,7 @@ export default function ManageProductsScreen({ navigation }) {
             <TouchableOpacity key={product.id} style={styles.productRow} onPress={() => openPanel(product)}>
               <View style={styles.productInfo}>
                 <Text style={styles.productName} numberOfLines={1}>{product.name}</Text>
-                <Text style={styles.productMeta}>{'#' + product.id + ' - ' + product.price + 'ÃÂ¢ÃÂÃÂ¬'}</Text>
+                <Text style={styles.productMeta}>{'#' + product.id + ' - ' + product.price + 'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¬'}</Text>
               </View>
               <Text style={[styles.statusBadge, product.stock_status === 'outofstock' ? styles.statusOut : styles.statusIn]}>
                 {product.stock_status === 'outofstock' ? 'Rupture' : 'En stock'}
@@ -284,18 +284,28 @@ export default function ManageProductsScreen({ navigation }) {
           <ActivityIndicator size="large" color="#2563eb" />
           <Text style={styles.loadingCenterText}>Chargement des produits...</Text>
         </View>
+      ) : !loading && products.length === 0 ? (
+        <View style={styles.loadingCenter}>
+          <Text style={styles.loadingCenterText}>{error ? error : 'Aucun produit trouvé'}</Text>
+          <TouchableOpacity
+            style={styles.retryBtn}
+            onPress={() => getSettings().then(s => loadProducts(s))}
+          >
+            <Text style={styles.retryBtnText}>Recharger</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <ScrollView style={styles.list}>
           {products.map((p) => <ProductRow key={p.id} product={p} onPress={() => openPanel(p)} />)}
         </ScrollView>
       )}
 
-      {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Panneau d'actions (modal) ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
+      {/* ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Panneau d'actions (modal) ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ */}
       <Modal visible={showPanel && !!selected} transparent animationType="none" onRequestClose={closePanel}>
         <View style={styles.modalOverlay}>
           <View style={styles.panel}>
 
-            {/* En-tÃÂÃÂªte du panneau */}
+            {/* En-tÃÂÃÂÃÂÃÂªte du panneau */}
             <View style={styles.panelHeader}>
               {selected && (selected.thumbnail || (selected.images && selected.images.length > 0 && selected.images[0])) ? <Image source={{ uri: selected.thumbnail || selected.images[0].src }} style={styles.panelThumb} resizeMode="cover" /> : null}
               <View style={{ flex: 1 }}>
@@ -311,7 +321,7 @@ export default function ManageProductsScreen({ navigation }) {
 
             <View style={styles.divider} />
 
-            {/* Message rÃÂÃÂ©sultat */}
+            {/* Message rÃÂÃÂÃÂÃÂ©sultat */}
             {actionMsg && (
               <View style={[styles.actionMsg, actionMsg.ok ? styles.actionMsgOk : styles.actionMsgErr]}>
                 <Text style={[styles.actionMsgText, actionMsg.ok ? styles.actionMsgTextOk : styles.actionMsgTextErr]}>
@@ -321,7 +331,7 @@ export default function ManageProductsScreen({ navigation }) {
             )}
 
             {/* Corriger le prix */}
-            <Text style={styles.actionLabel}>ÃÂ¢ÃÂÃÂÃÂ¯ÃÂ¸ÃÂ Corriger le prix</Text>
+            <Text style={styles.actionLabel}>ÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂ¯ÃÂÃÂ¸ÃÂÃÂ Corriger le prix</Text>
             <View style={styles.priceRow}>
               <TextInput
                 style={styles.priceInput}
@@ -331,7 +341,7 @@ export default function ManageProductsScreen({ navigation }) {
                 placeholder="0.00"
                 placeholderTextColor="#9ca3af"
               />
-              <Text style={styles.euroSign}>ÃÂ¢ÃÂÃÂ¬</Text>
+              <Text style={styles.euroSign}>ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¬</Text>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.actionBtnBlue, actioning && styles.disabled]}
                 onPress={handleCorrectPrice}
@@ -339,7 +349,7 @@ export default function ManageProductsScreen({ navigation }) {
               >
                 {actioning
                   ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.actionBtnText}>Mettre ÃÂÃÂ  jour</Text>}
+                  : <Text style={styles.actionBtnText}>Mettre ÃÂÃÂÃÂÃÂ  jour</Text>}
               </TouchableOpacity>
             </View>
 
@@ -350,7 +360,7 @@ export default function ManageProductsScreen({ navigation }) {
             style={[styles.actionBtn, styles.actionBtnSlate, actioning && styles.actionBtnDisabled]}
             onPress={handleTogglePublish} disabled={actioning}>
             {actioning ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={styles.actionBtnText}>{selected.status === 'publish' ? 'DÃÂÃÂ©publier' : 'Republier'}</Text>}
+              : <Text style={styles.actionBtnText}>{selected.status === 'publish' ? 'DÃÂÃÂÃÂÃÂ©publier' : 'Republier'}</Text>}
           </TouchableOpacity>
         )}
 
@@ -369,7 +379,7 @@ export default function ManageProductsScreen({ navigation }) {
               style={[styles.actionBtn, styles.actionBtnRed, actioning && styles.actionBtnDisabled]}
               onPress={handleDelete} disabled={actioning}>
               {actioning ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.actionBtnText}>Supprimer dÃÂÃÂ©finitivement</Text>}
+                : <Text style={styles.actionBtnText}>Supprimer dÃÂÃÂÃÂÃÂ©finitivement</Text>}
             </TouchableOpacity>
 
           </View>
@@ -444,6 +454,8 @@ const styles = StyleSheet.create({
   statusBadge: { fontSize: 11, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   statusIn: { backgroundColor: '#d1fae5', color: '#065f46' },
   statusOut: { backgroundColor: '#fee2e2', color: '#991b1b' },
-  loadingCenter:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
-  loadingCenterText: { fontSize: 14, color: '#6b7280' },
+  loadingCenter:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingCenterText: { fontSize: 14, color: '#6b7280', marginTop: 12 },
+  retryBtn:          { marginTop: 16, backgroundColor: '#2563eb', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
+  retryBtnText:      { color: '#fff', fontWeight: '600' },
 });
