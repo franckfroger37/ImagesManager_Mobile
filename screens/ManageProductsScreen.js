@@ -38,7 +38,8 @@ export default function ManageProductsScreen({ navigation }) {
   const [searchResults, setSearchResults] = useState(null);
   const [searching, setSearching] = useState(false);
 
-  const loadedOnceRef = useRef(false);
+  const loadedOnceRef        = useRef(false);
+  const suppressNextFocusRef = useRef(false);
 
   const loadProducts = useCallback(async (s, silent = false) => {
     loadedOnceRef.current = true;
@@ -56,6 +57,10 @@ export default function ManageProductsScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
+      if (suppressNextFocusRef.current) {
+        suppressNextFocusRef.current = false;
+        return;
+      }
       getSettings().then((s) => {
         setSettings(s);
         loadProducts(s, loadedOnceRef.current);
@@ -71,6 +76,7 @@ export default function ManageProductsScreen({ navigation }) {
   };
 
   const closePanel = () => {
+    suppressNextFocusRef.current = true;
     setShowPanel(false);
     setSelected(null);
     setActionMsg(null);
@@ -107,13 +113,11 @@ export default function ManageProductsScreen({ navigation }) {
       if (isPublished) {
         await unpublishProduct(selected.id, settings);
         updateLocalProduct(selected.id, { status: 'draft' });
-        setActionMsg({ ok: true, msg: '✅ Produit dépublié — il n\'apparaît plus dans la boutique.' });
       } else {
         await republishProduct(selected.id, settings);
         updateLocalProduct(selected.id, { status: 'publish' });
-        setActionMsg({ ok: true, msg: '✅ Produit republié — visible dans la boutique.' });
       }
-      setTimeout(() => closePanel(), 1500);
+      closePanel();
     } catch (e) {
       setActionMsg({ ok: false, msg: `❌ ${e.message}` });
     } finally { setActioning(false); }
