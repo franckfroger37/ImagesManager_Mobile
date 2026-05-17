@@ -6,6 +6,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { getSettings, saveSettings } from '../services/storageService';
 import { testWooConnection, testWpAuth } from '../services/woocommerceService';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 
 export default function SettingsScreen({ navigation }) {
   const [settings, setSettings] = useState({});
@@ -22,17 +24,17 @@ export default function SettingsScreen({ navigation }) {
     setSaving(true);
     const ok = await saveSettings(settings);
     setSaving(false);
-    if (ok) Alert.alert('✅ Sauvegardé', 'Vos paramètres ont été enregistrés.');
-    else Alert.alert('Erreur', 'Impossible de sauvegarder les paramètres.');
+    if (ok) Alert.alert('Sauvegarde', 'Vos parametres ont ete enregistres.');
+    else Alert.alert('Erreur', 'Impossible de sauvegarder les parametres.');
   };
 
   const handleTestWoo = async () => {
     setTestingWoo(true);
     try {
       await testWooConnection(settings);
-      Alert.alert('✅ Connexion WooCommerce OK', 'Vos clés API fonctionnent correctement.');
+      Alert.alert('Connexion WooCommerce OK', 'Vos cles API fonctionnent correctement.');
     } catch (e) {
-      Alert.alert('❌ Connexion échouée', e.message);
+      Alert.alert('Connexion echouee', e.message);
     } finally { setTestingWoo(false); }
   };
 
@@ -40,10 +42,64 @@ export default function SettingsScreen({ navigation }) {
     setTestingWp(true);
     try {
       const name = await testWpAuth(settings);
-      Alert.alert('✅ Authentification WordPress OK', `Connecté en tant que : ${name}`);
+      Alert.alert('Authentification WordPress OK', 'Connecte en tant que : ' + name);
     } catch (e) {
-      Alert.alert('❌ Authentification échouée', e.message);
+      Alert.alert('Authentification echouee', e.message);
     } finally { setTestingWp(false); }
+  };
+
+  const handleImportFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'text/plain',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+      const fileUri = result.assets[0].uri;
+      const text = await FileSystem.readAsStringAsync(fileUri);
+      const lines = text.split(/\r?\n/);
+      const parsed = {};
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIndex = trimmed.indexOf('=');
+        if (eqIndex === -1) continue;
+        const key = trimmed.substring(0, eqIndex).trim().toLowerCase();
+        const val = trimmed.substring(eqIndex + 1).trim();
+
+        if (key === 'woourl' || key === 'woo_url' || key === 'url') {
+          parsed.wooUrl = val;
+        } else if (key === 'consumerkey' || key === 'consumer_key' || key === 'ck') {
+          parsed.consumerKey = val;
+        } else if (key === 'consumersecret' || key === 'consumer_secret' || key === 'cs') {
+          parsed.consumerSecret = val;
+        } else if (key === 'wpusername' || key === 'wp_username' || key === 'username') {
+          parsed.wpUsername = val;
+        } else if (key === 'wpapppassword' || key === 'wp_app_password' || key === 'apppassword') {
+          parsed.wpAppPassword = val;
+        }
+      }
+
+      const imported = [];
+      if (parsed.wooUrl) imported.push('URL');
+      if (parsed.consumerKey) imported.push('Consumer Key');
+      if (parsed.consumerSecret) imported.push('Consumer Secret');
+      if (parsed.wpUsername) imported.push('WP Username');
+      if (parsed.wpAppPassword) imported.push('WP App Password');
+
+      if (imported.length === 0) {
+        Alert.alert('Import', 'Aucune cle reconnue dans le fichier.\nFormat attendu :\nwooUrl=...\nconsumerKey=...\nconsumerSecret=...');
+        return;
+      }
+
+      setSettings((prev) => ({ ...prev, ...parsed }));
+      Alert.alert('Import reussi', 'Cles importees : ' + imported.join(', ') + '\n\nN\'oubliez pas de sauvegarder !');
+    } catch (err) {
+      Alert.alert('Erreur', 'Impossible de lire le fichier : ' + err.message);
+    }
   };
 
   return (
@@ -55,6 +111,13 @@ export default function SettingsScreen({ navigation }) {
             <Ionicons name="storefront-outline" size={20} color="#2563eb" />
             <Text style={styles.cardTitle}>WooCommerce / Hostinger</Text>
           </View>
+
+          {/* Bouton import fichier */}
+          <TouchableOpacity style={styles.importBtn} onPress={handleImportFile}>
+            <Ionicons name="document-text-outline" size={18} color="#059669" />
+            <Text style={styles.importBtnText}>Charger les cles depuis un fichier</Text>
+          </TouchableOpacity>
+
           <Text style={styles.label}>URL de la boutique</Text>
           <TextInput style={styles.input} value={settings.wooUrl || ''} onChangeText={(v) => update('wooUrl', v)} placeholder="https://lemondedechristine.fr" autoCapitalize="none" keyboardType="url" />
           <Text style={styles.label}>Consumer Key</Text>
@@ -63,7 +126,7 @@ export default function SettingsScreen({ navigation }) {
           <TextInput style={styles.input} value={settings.consumerSecret || ''} onChangeText={(v) => update('consumerSecret', v)} placeholder="cs_..." autoCapitalize="none" secureTextEntry={!showSecrets} />
           <TouchableOpacity style={styles.toggleSecrets} onPress={() => setShowSecrets(!showSecrets)}>
             <Ionicons name={showSecrets ? 'eye-off-outline' : 'eye-outline'} size={16} color="#6b7280" />
-            <Text style={styles.toggleSecretsText}>{showSecrets ? 'Masquer les clés' : 'Afficher les clés'}</Text>
+            <Text style={styles.toggleSecretsText}>{showSecrets ? 'Masquer les cles' : 'Afficher les cles'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.testBtn} onPress={handleTestWoo} disabled={testingWoo}>
             {testingWoo ? <ActivityIndicator size="small" color="#2563eb" /> : <Ionicons name="wifi-outline" size={18} color="#2563eb" />}
@@ -76,7 +139,7 @@ export default function SettingsScreen({ navigation }) {
             <Ionicons name="lock-closed-outline" size={20} color="#7c3aed" />
             <Text style={styles.cardTitle}>WordPress (upload images)</Text>
           </View>
-          <Text style={styles.hint}>Nécessaire pour l'upload automatique des images.{'\n'}Créez un "Mot de passe d'application" dans WordPress → Profil.</Text>
+          <Text style={styles.hint}>Necessaire pour l'upload automatique des images. Creez un "Mot de passe d'application" dans WordPress - Profil.</Text>
           <Text style={styles.label}>Identifiant WordPress</Text>
           <TextInput style={styles.input} value={settings.wpUsername || ''} onChangeText={(v) => update('wpUsername', v)} placeholder="votre-login" autoCapitalize="none" />
           <Text style={styles.label}>Mot de passe d'application</Text>
@@ -90,7 +153,7 @@ export default function SettingsScreen({ navigation }) {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="image-outline" size={20} color="#059669" />
-            <Text style={styles.cardTitle}>Paramètres image</Text>
+            <Text style={styles.cardTitle}>Parametres image</Text>
           </View>
           <View style={styles.row}>
             <View style={styles.halfField}>
@@ -102,7 +165,7 @@ export default function SettingsScreen({ navigation }) {
               <TextInput style={styles.input} value={String(settings.targetHeight || 1200)} onChangeText={(v) => update('targetHeight', parseInt(v) || 1200)} keyboardType="number-pad" />
             </View>
           </View>
-          <Text style={styles.label}>Qualité de compression ({settings.targetQuality || 85}%)</Text>
+          <Text style={styles.label}>Qualite de compression ({settings.targetQuality || 85}%)</Text>
           <View style={styles.qualityRow}>
             <Text style={styles.qualityMin}>60%</Text>
             <View style={styles.qualityBtns}>
@@ -114,12 +177,12 @@ export default function SettingsScreen({ navigation }) {
             </View>
             <Text style={styles.qualityMax}>95%</Text>
           </View>
-          <Text style={styles.infoText}>📐 {(settings.targetWidth || 800)} × {(settings.targetHeight || 1200)} px ({((settings.targetWidth || 800) / (settings.targetHeight || 1200)).toFixed(2)} ratio)</Text>
+          <Text style={styles.infoText}>{(settings.targetWidth || 800)} x {(settings.targetHeight || 1200)} px ({((settings.targetWidth || 800) / (settings.targetHeight || 1200)).toFixed(2)} ratio)</Text>
         </View>
 
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
           {saving ? <ActivityIndicator color="#fff" /> : <Ionicons name="save-outline" size={20} color="#fff" />}
-          <Text style={styles.saveBtnText}>{saving ? 'Sauvegarde...' : '💾 Sauvegarder les paramètres'}</Text>
+          <Text style={styles.saveBtnText}>{saving ? 'Sauvegarde...' : 'Sauvegarder les parametres'}</Text>
         </TouchableOpacity>
         <Text style={styles.version}>Images Manager Mobile v1.0</Text>
       </ScrollView>
@@ -138,6 +201,8 @@ const styles = StyleSheet.create({
   hint: { fontSize: 13, color: '#6b7280', backgroundColor: '#f5f3ff', borderRadius: 8, padding: 10, lineHeight: 20, marginBottom: 4 },
   toggleSecrets: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingVertical: 4 },
   toggleSecretsText: { fontSize: 13, color: '#6b7280' },
+  importBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 11, borderRadius: 8, borderWidth: 1.5, borderColor: '#059669', backgroundColor: '#f0fdf4', marginBottom: 8 },
+  importBtnText: { color: '#059669', fontSize: 13, fontWeight: '600' },
   testBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: '#2563eb', backgroundColor: '#eff6ff' },
   testBtnPurple: { borderColor: '#7c3aed', backgroundColor: '#f5f3ff' },
   testBtnText: { color: '#2563eb', fontSize: 13, fontWeight: '600' },
