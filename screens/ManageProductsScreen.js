@@ -63,8 +63,6 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-const stripHtml = (html) => (html || '').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&nbsp;/g, ' ').trim();
-
 export default function ManageProductsScreen({ navigation }) {
   const [settings, setSettings] = useState(null);
   const [products, setProducts] = useState([]);
@@ -133,7 +131,7 @@ export default function ManageProductsScreen({ navigation }) {
   const openPanel = (product) => {
     setSelected(product);
     setCorrectPrice(product.price);
-    setCorrectDescription(stripHtml(product.short_description || ''));
+    setCorrectDescription(product.short_description || '');
     setActionMsg(null);
     setShowPanel(true);
   };
@@ -412,9 +410,8 @@ export default function ManageProductsScreen({ navigation }) {
 
             {/* Modifier la description */}
             <Text style={styles.actionLabel}>Description courte</Text>
-            <View>
             <TextInput
-              style={{ alignSelf: 'stretch', minHeight: 80, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: '#111827', textAlignVertical: 'top', marginBottom: 10, boxSizing: 'border-box' }}
+              style={{ alignSelf: 'stretch', minHeight: 80, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: '#111827', textAlignVertical: 'top', marginBottom: 10 }}
               value={correctDescription}
               onChangeText={setCorrectDescription}
               placeholder="Description du produit..."
