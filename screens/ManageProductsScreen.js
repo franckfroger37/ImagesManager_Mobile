@@ -11,6 +11,7 @@ import {
   searchProducts,
   setOutOfStock,
   updateProductPrice,
+  updateProductDescription,
   unpublishProduct,
   republishProduct,
   deleteProduct,
@@ -70,6 +71,7 @@ export default function ManageProductsScreen({ navigation }) {
   const [selected, setSelected] = useState(null);
   const [showPanel, setShowPanel] = useState(false);
   const [correctPrice, setCorrectPrice] = useState('');
+  const [correctDescription, setCorrectDescription] = useState('');
   const [actioning, setActioning] = useState(false);
   const [actionMsg, setActionMsg] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -129,6 +131,7 @@ export default function ManageProductsScreen({ navigation }) {
   const openPanel = (product) => {
     setSelected(product);
     setCorrectPrice(product.price);
+    setCorrectDescription(product.short_description || '');
     setActionMsg(null);
     setShowPanel(true);
   };
@@ -167,6 +170,20 @@ export default function ManageProductsScreen({ navigation }) {
       setActioning(false);
     }
   };
+
+  const handleCorrectDescription = async () => {
+    setActioning(true);
+    try {
+      await updateProductDescription(selected.id, correctDescription.trim(), settings);
+      updateLocalProduct(selected.id, { short_description: correctDescription.trim() });
+      setActionMsg({ ok: true, msg: 'Description mise a jour.' });
+    } catch (e) {
+      setActionMsg({ ok: false, msg: 'Erreur: ' + e.message });
+    } finally {
+      setActioning(false);
+    }
+  };
+
 
   const handleTogglePublish = async () => {
     const productId = selected.id;
@@ -390,6 +407,25 @@ export default function ManageProductsScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
               <View style={styles.divider} />
+
+            {/* Modifier la description */}
+            <Text style={styles.actionLabel}>Description courte</Text>
+            <TextInput
+              style={[styles.priceInput, { flex: 1, minHeight: 60, textAlignVertical: 'top', marginBottom: 8 }]}
+              value={correctDescription}
+              onChangeText={setCorrectDescription}
+              placeholder="Description du produit..."
+              placeholderTextColor="#9ca3af"
+              multiline
+            />
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.actionBtnBlue, actioning && styles.disabled]}
+              onPress={handleCorrectDescription}
+              disabled={actioning}
+            >
+              {actioning ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.actionBtnText}>Mettre a jour la description</Text>}
+            </TouchableOpacity>
+            <View style={styles.divider} />
 
               {selected && (
                 <TouchableOpacity
