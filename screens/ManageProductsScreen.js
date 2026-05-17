@@ -63,6 +63,8 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+const stripHtml = (html) => (html || '').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&nbsp;/g, ' ').trim();
+
 export default function ManageProductsScreen({ navigation }) {
   const [settings, setSettings] = useState(null);
   const [products, setProducts] = useState([]);
@@ -131,7 +133,7 @@ export default function ManageProductsScreen({ navigation }) {
   const openPanel = (product) => {
     setSelected(product);
     setCorrectPrice(product.price);
-    setCorrectDescription(product.short_description || '');
+    setCorrectDescription(stripHtml(product.short_description || ''));
     setActionMsg(null);
     setShowPanel(true);
   };
