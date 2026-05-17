@@ -4,16 +4,17 @@
     "slug": "images-manager",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon.jpg",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/icon.jpg",
       "resizeMode": "contain",
       "backgroundColor": "#2563eb"
     },
     "web": {
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "favicon": "./assets/icon.jpg"
     },
     "experiments": {
       "baseUrl": "/ImagesManager_Mobile"
@@ -24,7 +25,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.jpg",
         "backgroundColor": "#2563eb"
       },
       "package": "com.lemondedechristine.imagesmanager",
@@ -39,8 +40,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Autorisez Images Manager Ã  accÃ©der Ã  vos photos.",
-          "cameraPermission": "Autorisez Images Manager Ã  utiliser l'appareil photo."
+          "photosPermission": "Autorisez Images Manager a acceder a vos photos.",
+          "cameraPermission": "Autorisez Images Manager a utiliser l'appareil photo."
         }
       ]
     ]
