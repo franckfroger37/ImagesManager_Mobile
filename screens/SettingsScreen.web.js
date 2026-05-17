@@ -1,9 +1,9 @@
 // Version WEB de SettingsScreen
-// - settings initialisés de façon SYNCHRONE via getSettingsSync()
-//   → pas de useEffect, pas de race condition, pas d'écrasement des saisies
-// - Alertes remplacées par messages in-screen
-// - Section debug pour diagnostiquer les problèmes de stockage
-import React, { useState } from 'react';
+// - settings initialises de facon SYNCHRONE via getSettingsSync()
+// - Alertes remplacees par messages in-screen
+// - Section debug pour diagnostiquer les problemes de stockage
+// - Bouton pour recharger les cles API depuis un fichier texte
+import React, { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, ActivityIndicator, SafeAreaView,
@@ -13,7 +13,7 @@ import { getSettingsSync, saveSettings, debugReadLocalStorage } from '../service
 import { testWooConnection, testWpAuth } from '../services/woocommerceService';
 
 export default function SettingsScreen({ navigation }) {
-  // Initialisation synchrone — localStorage lu immédiatement, sans async
+  // Initialisation synchrone -- localStorage lu immediatement, sans async
   const [settings, setSettings] = useState(() => getSettingsSync());
 
   const [saving,     setSaving]     = useState(false);
@@ -24,6 +24,9 @@ export default function SettingsScreen({ navigation }) {
   const [wpStatus,   setWpStatus]   = useState(null);
   const [saveStatus, setSaveStatus] = useState(null);
   const [debugInfo,  setDebugInfo]  = useState(null);
+  const [importStatus, setImportStatus] = useState(null);
+
+  const fileInputRef = useRef(null);
 
   const update = (key, value) => setSettings((prev) => ({ ...prev, [key]: value }));
 
@@ -33,8 +36,8 @@ export default function SettingsScreen({ navigation }) {
     const ok = await saveSettings(settings);
     setSaving(false);
     setSaveStatus(ok
-      ? { ok: true,  msg: '✅ Paramètres enregistrés avec succès.' }
-      : { ok: false, msg: '❌ Impossible de sauvegarder les paramètres.' }
+      ? { ok: true,  msg: 'Parametres enregistres avec succes.' }
+      : { ok: false, msg: 'Impossible de sauvegarder les parametres.' }
     );
   };
 
@@ -43,9 +46,9 @@ export default function SettingsScreen({ navigation }) {
     setWooStatus(null);
     try {
       await testWooConnection(settings);
-      setWooStatus({ ok: true, msg: '✅ Connexion WooCommerce OK — clés API valides.' });
+      setWooStatus({ ok: true, msg: 'Connexion WooCommerce OK -- cles API valides.' });
     } catch (e) {
-      setWooStatus({ ok: false, msg: `❌ ${e.message}` });
+      setWooStatus({ ok: false, msg: e.message });
     } finally { setTestingWoo(false); }
   };
 
@@ -54,31 +57,96 @@ export default function SettingsScreen({ navigation }) {
     setWpStatus(null);
     try {
       const name = await testWpAuth(settings);
-      setWpStatus({ ok: true, msg: `✅ Authentification OK — connecté en tant que : ${name}` });
+      setWpStatus({ ok: true, msg: 'Authentification OK -- connecte en tant que : ' + name });
     } catch (e) {
-      setWpStatus({ ok: false, msg: `❌ ${e.message}` });
+      setWpStatus({ ok: false, msg: e.message });
     } finally { setTestingWp(false); }
+  };
+
+  // ── Import des cles API depuis un fichier texte ──
+  const handleImportFile = () => {
+    setImportStatus(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileSelected = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.split(/\r?\n/);
+        const parsed = {};
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) continue;
+          const eqIndex = trimmed.indexOf('=');
+          if (eqIndex === -1) continue;
+          const key = trimmed.substring(0, eqIndex).trim().toLowerCase();
+          const val = trimmed.substring(eqIndex + 1).trim();
+
+          if (key === 'woourl' || key === 'woo_url' || key === 'url') {
+            parsed.wooUrl = val;
+          } else if (key === 'consumerkey' || key === 'consumer_key' || key === 'ck') {
+            parsed.consumerKey = val;
+          } else if (key === 'consumersecret' || key === 'consumer_secret' || key === 'cs') {
+            parsed.consumerSecret = val;
+          } else if (key === 'wpusername' || key === 'wp_username' || key === 'username') {
+            parsed.wpUsername = val;
+          } else if (key === 'wpapppassword' || key === 'wp_app_password' || key === 'apppassword') {
+            parsed.wpAppPassword = val;
+          }
+        }
+
+        const imported = [];
+        if (parsed.wooUrl) imported.push('URL');
+        if (parsed.consumerKey) imported.push('Consumer Key');
+        if (parsed.consumerSecret) imported.push('Consumer Secret');
+        if (parsed.wpUsername) imported.push('WP Username');
+        if (parsed.wpAppPassword) imported.push('WP App Password');
+
+        if (imported.length === 0) {
+          setImportStatus({ ok: false, msg: 'Aucune cle reconnue dans le fichier. Format attendu : wooUrl=..., consumerKey=..., consumerSecret=...' });
+          return;
+        }
+
+        setSettings((prev) => ({ ...prev, ...parsed }));
+        setImportStatus({ ok: true, msg: 'Cles importees : ' + imported.join(', ') + '. N\'oubliez pas de sauvegarder !' });
+      } catch (err) {
+        setImportStatus({ ok: false, msg: 'Erreur de lecture du fichier : ' + err.message });
+      }
+    };
+    reader.onerror = () => {
+      setImportStatus({ ok: false, msg: 'Impossible de lire le fichier.' });
+    };
+    reader.readAsText(file);
   };
 
   const handleDebug = () => {
     const fromStorage = debugReadLocalStorage();
     const lines = [];
-    lines.push('=== Cache mémoire (actuel) ===');
-    lines.push(`wooUrl: "${settings.wooUrl || '(vide)'}"`);
-    lines.push(`consumerKey: "${settings.consumerKey ? '***' + settings.consumerKey.slice(-4) : '(vide)'}"`);
-    lines.push(`consumerSecret: "${settings.consumerSecret ? '***' + settings.consumerSecret.slice(-4) : '(vide)'}"`);
-    lines.push(`wpUsername: "${settings.wpUsername || '(vide)'}"`);
-    lines.push(`wpAppPassword: "${settings.wpAppPassword ? '(défini)' : '(vide)'}"`);
+    lines.push('=== Cache memoire (actuel) ===');
+    lines.push('wooUrl: "' + (settings.wooUrl || '(vide)') + '"');
+    lines.push('consumerKey: "' + (settings.consumerKey ? '***' + settings.consumerKey.slice(-4) : '(vide)') + '"');
+    lines.push('consumerSecret: "' + (settings.consumerSecret ? '***' + settings.consumerSecret.slice(-4) : '(vide)') + '"');
+    lines.push('wpUsername: "' + (settings.wpUsername || '(vide)') + '"');
+    lines.push('wpAppPassword: "' + (settings.wpAppPassword ? '(defini)' : '(vide)') + '"');
     lines.push('');
     lines.push('=== localStorage ===');
     if (!fromStorage) {
-      lines.push('(rien enregistré)');
+      lines.push('(rien enregistre)');
     } else if (fromStorage.error) {
-      lines.push(`ERREUR: ${fromStorage.error}`);
+      lines.push('ERREUR: ' + fromStorage.error);
     } else {
-      lines.push(`wooUrl: "${fromStorage.wooUrl || '(vide)'}"`);
-      lines.push(`consumerKey: "${fromStorage.consumerKey ? '***' + fromStorage.consumerKey.slice(-4) : '(vide)'}"`);
-      lines.push(`wpUsername: "${fromStorage.wpUsername || '(vide)'}"`);
+      lines.push('wooUrl: "' + (fromStorage.wooUrl || '(vide)') + '"');
+      lines.push('consumerKey: "' + (fromStorage.consumerKey ? '***' + fromStorage.consumerKey.slice(-4) : '(vide)') + '"');
+      lines.push('wpUsername: "' + (fromStorage.wpUsername || '(vide)') + '"');
     }
     setDebugInfo(lines.join('\n'));
   };
@@ -98,6 +166,15 @@ export default function SettingsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Input file cache pour import cles */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".txt,.conf,.cfg,.ini"
+        style={{ display: 'none' }}
+        onChange={handleFileSelected}
+      />
+
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
 
         {/* ── WooCommerce ── */}
@@ -106,6 +183,13 @@ export default function SettingsScreen({ navigation }) {
             <Ionicons name="storefront-outline" size={20} color="#2563eb" />
             <Text style={styles.cardTitle}>WooCommerce / Hostinger</Text>
           </View>
+
+          {/* Bouton import fichier */}
+          <TouchableOpacity style={styles.importBtn} onPress={handleImportFile}>
+            <Ionicons name="document-text-outline" size={18} color="#059669" />
+            <Text style={styles.importBtnText}>Charger les cles depuis un fichier</Text>
+          </TouchableOpacity>
+          <StatusBadge status={importStatus} />
 
           <Text style={styles.label}>URL de la boutique</Text>
           <TextInput style={styles.input} value={settings.wooUrl || ''} onChangeText={(v) => update('wooUrl', v)} placeholder="https://lemondedechristine.fr" autoCapitalize="none" keyboardType="url" />
@@ -118,7 +202,7 @@ export default function SettingsScreen({ navigation }) {
 
           <TouchableOpacity style={styles.toggleSecrets} onPress={() => setShowSecrets(!showSecrets)}>
             <Ionicons name={showSecrets ? 'eye-off-outline' : 'eye-outline'} size={16} color="#6b7280" />
-            <Text style={styles.toggleSecretsText}>{showSecrets ? 'Masquer les clés' : 'Afficher les clés'}</Text>
+            <Text style={styles.toggleSecretsText}>{showSecrets ? 'Masquer les cles' : 'Afficher les cles'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.testBtn} onPress={handleTestWoo} disabled={testingWoo}>
@@ -136,7 +220,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
           <View style={styles.hint}>
             <Text style={styles.hintText}>
-              Créez un <Text style={{ fontWeight: '700' }}>"Mot de passe d'application"</Text> dans WordPress → Profil → Mots de passe d'application.
+              Creez un <Text style={{ fontWeight: '700' }}>"Mot de passe d'application"</Text> dans WordPress - Profil - Mots de passe d'application.
             </Text>
           </View>
 
@@ -157,7 +241,7 @@ export default function SettingsScreen({ navigation }) {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="image-outline" size={20} color="#059669" />
-            <Text style={styles.cardTitle}>Paramètres image</Text>
+            <Text style={styles.cardTitle}>Parametres image</Text>
           </View>
           <View style={styles.row}>
             <View style={styles.half}>
@@ -169,7 +253,7 @@ export default function SettingsScreen({ navigation }) {
               <TextInput style={styles.input} value={String(settings.targetHeight || 1200)} onChangeText={(v) => update('targetHeight', parseInt(v) || 1200)} keyboardType="number-pad" />
             </View>
           </View>
-          <Text style={styles.label}>Qualité ({q}%)</Text>
+          <Text style={styles.label}>Qualite ({q}%)</Text>
           <View style={styles.qualityRow}>
             {[60, 70, 75, 80, 85, 90, 95].map((qv) => (
               <TouchableOpacity key={qv} style={[styles.qualityBtn, q === qv && styles.qualityBtnOn]} onPress={() => update('targetQuality', qv)}>
@@ -177,20 +261,20 @@ export default function SettingsScreen({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
-          <Text style={styles.infoText}>📐 {settings.targetWidth || 800} × {settings.targetHeight || 1200} px — ratio {((settings.targetWidth || 800) / (settings.targetHeight || 1200)).toFixed(2)}</Text>
+          <Text style={styles.infoText}>{settings.targetWidth || 800} x {settings.targetHeight || 1200} px -- ratio {((settings.targetWidth || 800) / (settings.targetHeight || 1200)).toFixed(2)}</Text>
         </View>
 
         {/* ── Sauvegarder ── */}
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
           {saving ? <ActivityIndicator color="#fff" /> : <Ionicons name="save-outline" size={20} color="#fff" />}
-          <Text style={styles.saveBtnText}>{saving ? 'Sauvegarde...' : '💾 Sauvegarder les paramètres'}</Text>
+          <Text style={styles.saveBtnText}>{saving ? 'Sauvegarde...' : 'Sauvegarder les parametres'}</Text>
         </TouchableOpacity>
         <StatusBadge status={saveStatus} />
 
         {/* ── Debug ── */}
         <TouchableOpacity style={styles.debugBtn} onPress={handleDebug}>
           <Ionicons name="bug-outline" size={16} color="#6b7280" />
-          <Text style={styles.debugBtnText}>🔍 Vérifier le stockage (diagnostic)</Text>
+          <Text style={styles.debugBtnText}>Verifier le stockage (diagnostic)</Text>
         </TouchableOpacity>
         {debugInfo ? (
           <View style={styles.debugBox}>
@@ -217,6 +301,8 @@ const styles = StyleSheet.create({
   hintText:      { fontSize: 13, color: '#6b7280', lineHeight: 20 },
   toggleSecrets:     { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingVertical: 4 },
   toggleSecretsText: { fontSize: 13, color: '#6b7280' },
+  importBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 11, borderRadius: 8, borderWidth: 1.5, borderColor: '#059669', backgroundColor: '#f0fdf4', marginBottom: 8 },
+  importBtnText: { color: '#059669', fontSize: 13, fontWeight: '600' },
   testBtn:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14, paddingVertical: 11, borderRadius: 8, borderWidth: 1.5, borderColor: '#2563eb', backgroundColor: '#eff6ff' },
   testBtnPurple: { borderColor: '#7c3aed', backgroundColor: '#f5f3ff' },
   testBtnText:   { color: '#2563eb', fontSize: 13, fontWeight: '600' },
