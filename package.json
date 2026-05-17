@@ -8,7 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build": "expo export -p web && cp web/index.html dist/index.html && cp web/manifest.json dist/manifest.json",
+    "build": "expo export -p web && sed -i 's|</head>|<link rel=\"apple-touch-icon\" sizes=\"512x512\" href=\"/ImagesManager_Mobile/icon-512.png\"><link rel=\"apple-touch-icon\" sizes=\"192x192\" href=\"/ImagesManager_Mobile/icon-192.png\"><link rel=\"manifest\" href=\"/ImagesManager_Mobile/manifest.json\"><meta name=\"apple-mobile-web-app-capable\" content=\"yes\"><meta name=\"apple-mobile-web-app-title\" content=\"Images Manager\"></head>|' dist/index.html && cp web/manifest.json dist/manifest.json",
     "deploy": "git add . && git commit -m \"Deploy\" && git push"
   },
   "dependencies": {
