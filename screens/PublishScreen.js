@@ -16,6 +16,7 @@ export default function PublishScreen({ route, navigation }) {
   const { uri, fileName, cropParams } = route.params;
 
   const [price, setPrice] = useState('');
+  const [description, setDescription] = useState('');
   const [categories, setCategories] = useState(CATEGORIES);
   const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0]);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
@@ -58,18 +59,18 @@ export default function PublishScreen({ route, navigation }) {
 
   const handlePublish = async () => {
     if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
-      setMsg('⚠️ Veuillez saisir un prix valide avant de publier.', 'error');
+      setMsg('Veuillez saisir un prix valide avant de publier.', 'error');
       return;
     }
     if (!settingsOk) {
-      setMsg('⚠️ Paramètres WooCommerce manquants — cliquez sur ⚙️ pour les configurer.', 'error');
+      setMsg('Parametres WooCommerce manquants -- cliquez sur le bouton Reglages pour les configurer.', 'error');
       return;
     }
 
     setProcessing(true);
     setPublishedProduct(null);
     try {
-      setMsg('⚙️ Traitement de l\'image en cours...', 'info');
+      setMsg('Traitement de l\'image en cours...', 'info');
       const processedUri = await processImage(uri, cropParams, {
         targetWidth:  settings.targetWidth  || 800,
         targetHeight: settings.targetHeight || 1200,
@@ -77,13 +78,13 @@ export default function PublishScreen({ route, navigation }) {
       });
 
       const sizKb = await getFileSize(processedUri);
-      setMsg(`✅ Image traitée (${sizKb} Ko) — publication en cours...`, 'info');
+      setMsg('Image traitee (' + sizKb + ' Ko) -- publication en cours...', 'info');
 
       const result = await publishProduct({
         processedImageUri: processedUri,
         refName,
         price: parseFloat(price),
-        description: '',
+        description: description.trim(),
         categorySlug:  selectedCategory.value,
         categoryLabel: selectedCategory.label,
         categoryId:    selectedCategory.id || null,
@@ -95,10 +96,10 @@ export default function PublishScreen({ route, navigation }) {
       setPublishedProduct(result); // {id, permalink}
       setCorrectPrice(price);
       setPostActionMsg(null);
-      setMsg(`✅ Produit "${refName}" publié avec succès !`, 'success');
+      setMsg('Produit "' + refName + '" publie avec succes !', 'success');
     } catch (error) {
       setProcessing(false);
-      setMsg(`❌ Erreur : ${error.message || 'Une erreur est survenue.'}`, 'error');
+      setMsg('Erreur : ' + (error.message || 'Une erreur est survenue.'), 'error');
     }
   };
 
@@ -107,15 +108,15 @@ export default function PublishScreen({ route, navigation }) {
   const handleCorrectPrice = async () => {
     const p = parseFloat(correctPrice);
     if (!p || p <= 0) {
-      setPostActionMsg({ ok: false, msg: '⚠️ Prix invalide.' });
+      setPostActionMsg({ ok: false, msg: 'Prix invalide.' });
       return;
     }
     setPostActioning(true);
     try {
       await updateProductPrice(publishedProduct.id, p, settings);
-      setPostActionMsg({ ok: true, msg: `✅ Prix mis à jour : ${p.toFixed(2)} €` });
+      setPostActionMsg({ ok: true, msg: 'Prix mis a jour : ' + p.toFixed(2) + ' EUR' });
     } catch (e) {
-      setPostActionMsg({ ok: false, msg: `❌ ${e.message}` });
+      setPostActionMsg({ ok: false, msg: 'Erreur: ' + e.message });
     } finally { setPostActioning(false); }
   };
 
@@ -123,9 +124,9 @@ export default function PublishScreen({ route, navigation }) {
     setPostActioning(true);
     try {
       await unpublishProduct(publishedProduct.id, settings);
-      setPostActionMsg({ ok: true, msg: '✅ Produit dépublié (brouillon). Il n\'apparaît plus dans la boutique.' });
+      setPostActionMsg({ ok: true, msg: 'Produit depublie (brouillon). Il n\'apparait plus dans la boutique.' });
     } catch (e) {
-      setPostActionMsg({ ok: false, msg: `❌ ${e.message}` });
+      setPostActionMsg({ ok: false, msg: 'Erreur: ' + e.message });
     } finally { setPostActioning(false); }
   };
 
@@ -133,10 +134,10 @@ export default function PublishScreen({ route, navigation }) {
     setPostActioning(true);
     try {
       await deleteProduct(publishedProduct.id, settings);
-      // Retour à l'écran de recadrage avec les mêmes paramètres
+      // Retour a l'ecran de recadrage avec les memes parametres
       navigation.goBack();
     } catch (e) {
-      setPostActionMsg({ ok: false, msg: `❌ Suppression échouée : ${e.message}` });
+      setPostActionMsg({ ok: false, msg: 'Suppression echouee : ' + e.message });
       setPostActioning(false);
     }
   };
@@ -158,7 +159,7 @@ export default function PublishScreen({ route, navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
-        {/* ── Aperçu photo ── */}
+        {/* ── Apercu photo ── */}
         <View style={styles.previewCard}>
           <Image source={{ uri }} style={styles.preview} resizeMode="cover" />
           <View style={styles.previewInfo}>
@@ -167,20 +168,34 @@ export default function PublishScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* ── Bannière settings manquants ── */}
+        {/* ── Banniere settings manquants ── */}
         {settings && !settingsOk && (
           <TouchableOpacity style={styles.warningBanner} onPress={() => navigation.navigate('Settings')}>
             <Ionicons name="warning-outline" size={18} color="#92400e" />
-            <Text style={styles.warningText}>Paramètres WooCommerce non configurés — tapez ici</Text>
+            <Text style={styles.warningText}>Parametres WooCommerce non configures -- tapez ici</Text>
             <Ionicons name="chevron-forward" size={16} color="#92400e" />
           </TouchableOpacity>
         )}
 
-        {/* ── Formulaire (masqué après publication) ── */}
+        {/* ── Formulaire (masque apres publication) ── */}
         {!publishedProduct && (
           <>
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>💰 Prix de vente (€)</Text>
+              <Text style={styles.sectionLabel}>Description courte</Text>
+              <TextInput
+                style={styles.descriptionInput}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Description du produit (optionnel)"
+                placeholderTextColor="#9ca3af"
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Prix de vente (EUR)</Text>
               <TextInput
                 style={styles.priceInput}
                 value={price}
@@ -193,7 +208,7 @@ export default function PublishScreen({ route, navigation }) {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>🏷️ Catégorie</Text>
+              <Text style={styles.sectionLabel}>Categorie</Text>
               <TouchableOpacity style={styles.categorySelector} onPress={() => setShowCategoryPicker(true)}>
                 <Text style={styles.categorySelectorText}>{selectedCategory.label}</Text>
                 <Ionicons name="chevron-down" size={20} color="#6b7280" />
@@ -201,12 +216,12 @@ export default function PublishScreen({ route, navigation }) {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>📐 Paramètres image</Text>
+              <Text style={styles.sectionLabel}>Parametres image</Text>
               <View style={styles.infoRow}>
                 <Ionicons name="resize-outline" size={16} color="#6b7280" />
-                <Text style={styles.infoText}>{settings?.targetWidth || 800} × {settings?.targetHeight || 1200} px</Text>
+                <Text style={styles.infoText}>{settings?.targetWidth || 800} x {settings?.targetHeight || 1200} px</Text>
                 <Ionicons name="speedometer-outline" size={16} color="#6b7280" style={{ marginLeft: 16 }} />
-                <Text style={styles.infoText}>Qualité {settings?.targetQuality || 85}%</Text>
+                <Text style={styles.infoText}>Qualite {settings?.targetQuality || 85}%</Text>
               </View>
             </View>
           </>
@@ -230,7 +245,7 @@ export default function PublishScreen({ route, navigation }) {
               ? <ActivityIndicator color="#fff" />
               : <Ionicons name="cloud-upload-outline" size={22} color="#fff" />}
             <Text style={styles.publishBtnText}>
-              {processing ? 'Traitement en cours...' : '🚀 Traiter & Publier'}
+              {processing ? 'Traitement en cours...' : 'Traiter & Publier'}
             </Text>
           </TouchableOpacity>
         )}
@@ -241,8 +256,8 @@ export default function PublishScreen({ route, navigation }) {
             <View style={styles.postHeader}>
               <Ionicons name="checkmark-circle" size={28} color="#16a34a" />
               <View style={{ flex: 1 }}>
-                <Text style={styles.postTitle}>Produit publié</Text>
-                <Text style={styles.postSub}>ID #{publishedProduct.id} · {refName}</Text>
+                <Text style={styles.postTitle}>Produit publie</Text>
+                <Text style={styles.postSub}>ID #{publishedProduct.id} - {refName}</Text>
               </View>
               {publishedProduct.permalink ? (
                 <TouchableOpacity style={styles.viewBtn} onPress={handleOpenSite}>
@@ -255,7 +270,7 @@ export default function PublishScreen({ route, navigation }) {
             <View style={styles.divider} />
 
             {/* Corriger le prix */}
-            <Text style={styles.actionLabel}>✏️ Corriger le prix</Text>
+            <Text style={styles.actionLabel}>Corriger le prix</Text>
             <View style={styles.priceRow}>
               <TextInput
                 style={styles.priceCorrectInput}
@@ -265,7 +280,7 @@ export default function PublishScreen({ route, navigation }) {
                 placeholder="0.00"
                 placeholderTextColor="#9ca3af"
               />
-              <Text style={styles.euroSign}>€</Text>
+              <Text style={styles.euroSign}>EUR</Text>
                           <TouchableOpacity
                 style={[styles.actionBtn, styles.actionBtnBlue, postActioning && styles.actionBtnDisabled]}
                 onPress={handleCorrectPrice}
@@ -273,14 +288,14 @@ export default function PublishScreen({ route, navigation }) {
               >
                 {postActioning
                   ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.actionBtnText}>Mettre à jour</Text>
+                  : <Text style={styles.actionBtnText}>Mettre a jour</Text>
                 }
               </TouchableOpacity>
             </View>
 
             <View style={styles.divider} />
 
-            {/* Message résultat action */}
+            {/* Message resultat action */}
             {postActionMsg && (
               <View style={[styles.postActionMsg,
                 postActionMsg.ok ? styles.postActionMsgOk : styles.postActionMsgErr]}>
@@ -291,7 +306,7 @@ export default function PublishScreen({ route, navigation }) {
               </View>
             )}
 
-            {/* Dépublier */}
+            {/* Depublier */}
                     <TouchableOpacity
           style={[styles.actionBtn, styles.actionBtnOrange, postActioning && styles.actionBtnDisabled]}
           onPress={handleUnpublish}
@@ -299,7 +314,7 @@ export default function PublishScreen({ route, navigation }) {
         >
           {postActioning
             ? <ActivityIndicator size="small" color="#fff" />
-            : <Text style={styles.actionBtnText}>Dépublier</Text>
+            : <Text style={styles.actionBtnText}>Depublier</Text>
           }
         </TouchableOpacity>
 
@@ -311,14 +326,14 @@ export default function PublishScreen({ route, navigation }) {
         >
           {postActioning
             ? <ActivityIndicator size="small" color="#fff" />
-            : <Text style={styles.actionBtnText}>Supprimer définitivement</Text>
+            : <Text style={styles.actionBtnText}>Supprimer definitivement</Text>
           }
         </TouchableOpacity>
 
             {/* Nouveau produit */}
             <TouchableOpacity style={styles.newProductBtn} onPress={() => navigation.navigate('Home')}>
               <Ionicons name="home-outline" size={20} color="#fff" />
-              <Text style={styles.newProductBtnText}>🏠 Nouveau produit</Text>
+              <Text style={styles.newProductBtnText}>Nouveau produit</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -333,12 +348,12 @@ export default function PublishScreen({ route, navigation }) {
 
       </ScrollView>
 
-      {/* ── Sélecteur catégorie ── */}
+      {/* ── Selecteur categorie ── */}
       <Modal visible={showCategoryPicker} transparent animationType="slide" onRequestClose={() => setShowCategoryPicker(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Choisir une catégorie</Text>
+              <Text style={styles.modalTitle}>Choisir une categorie</Text>
               <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
                 <Ionicons name="close" size={24} color="#374151" />
               </TouchableOpacity>
@@ -374,6 +389,7 @@ const styles = StyleSheet.create({
   warningText:    { flex: 1, fontSize: 13, color: '#92400e', fontWeight: '500' },
   section:        { marginBottom: 16 },
   sectionLabel:   { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.3 },
+  descriptionInput: { backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb', padding: 12, fontSize: 15, color: '#111827', minHeight: 80 },
   priceInput:     { backgroundColor: '#fff', borderRadius: 10, borderWidth: 2, borderColor: '#2563eb', padding: 10, fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
   categorySelector:     { backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb', padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   categorySelectorText: { fontSize: 16, color: '#111827', fontWeight: '500' },
@@ -418,7 +434,7 @@ const styles = StyleSheet.create({
   newProductBtn:  { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 8 },
   newProductBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
-  // Modal catégories
+  // Modal categories
   modalOverlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet:     { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 34 },
   modalHeader:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
