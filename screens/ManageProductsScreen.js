@@ -410,14 +410,15 @@ export default function ManageProductsScreen({ navigation }) {
 
             {/* Modifier la description */}
             <Text style={styles.actionLabel}>Description courte</Text>
-            <View style={{ alignSelf: 'stretch' }}>
+            <View>
             <TextInput
-              style={{ minHeight: 80, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 12, fontSize: 15, color: '#111827', textAlignVertical: 'top', marginBottom: 10 }}
+              style={{ alignSelf: 'stretch', minHeight: 80, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: '#111827', textAlignVertical: 'top', marginBottom: 10, boxSizing: 'border-box' }}
               value={correctDescription}
               onChangeText={setCorrectDescription}
               placeholder="Description du produit..."
               placeholderTextColor="#9ca3af"
               multiline
+              numberOfLines={4}
             />
             <TouchableOpacity
               style={[styles.actionBtn, styles.actionBtnBlue, actioning && styles.disabled]}
