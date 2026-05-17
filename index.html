@@ -1,83 +1,37 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>Images Manager</title>
-
-    <!-- PWA -->
-    <link rel="manifest" href="/ImagesManager_Mobile/manifest.json" />
-    <meta name="theme-color" content="#2563eb" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Images Manager" />
-    <link rel="apple-touch-icon" href="/ImagesManager_Mobile/icon-512.png" />
-    <link rel="icon" type="image/png" href="/ImagesManager_Mobile/favicon.png" />
-
+    <title>Images Manager V2</title>
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
-      html, body { height: 100%; margin: 0; padding: 0; }
-      body { overflow: hidden; }
-      /* flex-direction: column obligatoire pour que le layout RN fonctionne sur web */
-      #root { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; }
-    </style>
-    <style>
-      #im-splash {
-        position: fixed; inset: 0; background: #2563eb;
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        z-index: 99999; font-family: Arial, sans-serif;
-        transition: opacity 0.4s ease;
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
       }
-      #im-splash .t1 { color:#fff; font-size:26px; font-weight:700; margin:0; }
-      #im-splash .t2 { color:rgba(255,255,255,.6); font-size:13px; margin:6px 0 0; }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
     </style>
-  </head>
+  <link rel="shortcut icon" href="/ImagesManager_Mobile/favicon.ico" /><link rel="apple-touch-icon" sizes="512x512" href="/ImagesManager_Mobile/icon-512.png"><link rel="apple-touch-icon" sizes="192x192" href="/ImagesManager_Mobile/icon-192.png"><link rel="manifest" href="/ImagesManager_Mobile/manifest.json"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Images Manager"></head>
+
   <body>
-    <noscript>Activez JavaScript pour utiliser cette application.</noscript>
-
-    <div id="im-splash">
-      <svg width="88" height="88" viewBox="0 0 88 88" fill="none" style="margin-bottom:18px">
-        <rect width="88" height="88" rx="14" fill="rgba(255,255,255,.18)"/>
-        <rect x="10" y="26" width="68" height="42" rx="7" fill="white"/>
-        <circle cx="44" cy="47" r="13" fill="#2563eb"/>
-        <circle cx="44" cy="47" r="9" fill="white"/>
-        <circle cx="44" cy="47" r="5" fill="#2563eb"/>
-        <rect x="27" y="16" width="20" height="12" rx="4" fill="white"/>
-      </svg>
-      <p class="t1">Images Manager</p>
-      <p class="t2">Bijoux &amp; WooCommerce</p>
-    </div>
-
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <!-- The root element for your Expo app. -->
     <div id="root"></div>
-
-    <script>
-      // ── Capture beforeinstallprompt AVANT que React charge ──────────────
-      window.__installPrompt = null;
-      window.addEventListener('beforeinstallprompt', function(e) {
-        e.preventDefault();
-        window.__installPrompt = e;
-        window.dispatchEvent(new CustomEvent('pwa-installable'));
-      });
-
-      window.addEventListener('load', function() {
-        // Masque le splash après 1.8s
-        var s = document.getElementById('im-splash');
-        if (s) {
-          setTimeout(function() {
-            s.style.opacity = '0';
-            setTimeout(function() { s.remove(); }, 450);
-          }, 1800);
-        }
-        // Service Worker
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker
-            .register('/ImagesManager_Mobile/sw.js')
-            .then(function() { console.log('[PWA] SW enregistré'); })
-            .catch(function(e) { console.warn('[PWA] SW erreur:', e); });
-        }
-      });
-    </script>
-  </body>
+  <script src="/ImagesManager_Mobile/_expo/static/js/web/index-eb06239e6d0860934f9eadf7d1ea68c9.js" defer></script>
+</body>
 </html>
